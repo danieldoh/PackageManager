@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-admin.initializeApp()
+admin.initializeApp();
 const cors = require("cors")({origin: true});
 
 exports.auth = functions.https.onRequest((req: any, res: any) => {
