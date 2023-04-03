@@ -1,10 +1,14 @@
-const functions = require("firebase-functions");
+// const functions = require("firebase-functions");
+import * as functions from "firebase-functions";
 import {getStorage, ref, updateMetadata, uploadString} from "firebase/storage";
 import {initializeApp} from "firebase/app";
 import {getFirestore} from "firebase-admin/firestore";
 const admin = require("firebase-admin");
 
-exports.uploadFile = functions.https.onRequest(async (req: any, res: any) => {
+type Req = functions.https.Request;
+type Res = functions.Response
+
+exports.uploadFile = functions.https.onRequest(async (req: Req, res: Res) => {
   try {
     const {data, metadata} = JSON.parse(JSON.stringify(req.body));
 
