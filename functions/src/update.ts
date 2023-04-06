@@ -7,7 +7,7 @@ const admin = require("firebase-admin");
 type Req = functions.https.Request;
 type Res = functions.Response
 
-exports.uploadFile = functions.https.onRequest(async (req: Req, res: Res) => {
+exports.updateFile = functions.https.onRequest(async (req: Req, res: Res) => {
   try {
     const {data, metadata} = JSON.parse(JSON.stringify(req.body));
 
@@ -27,24 +27,29 @@ exports.uploadFile = functions.https.onRequest(async (req: Req, res: Res) => {
     const db = getFirestore(admin.apps[0]);
     const storageRef = ref(storage, `package/${metadata.ID}`);
 
-    await uploadString(storageRef, file, "base64");
-    console.log("Uploaded a base64 file");
-    await updateMetadata(storageRef, metadata);
     const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
     const doc = await packagesRef.get();
-    if (!doc.exists) {
-      const newPackage = db.collection(metadata.Name);
-      await newPackage.doc(metadata.Version).set({
-        Name: metadata.Name,
-        Version: metadata.Version,
-        ID: metadata.ID,
-      });
-      console.log("The metadata is successfully saved.");
-    } else {
-      console.log("This version is already existed.");
-    }
+    if (doc.exists) {
+      console.log(doc.data());
+      const docData: any = doc.data();
+      console.log(docData);
+      const name: string = docData['Name'];
+      console.log(name);
+      const version: string = docData['Version'];
+      console.log(version);
+      const id: string = docData['ID'];
+      console.log(id);
+      if (name == metadata.Name && version == metadata.Version && id == metadata.ID) {
+        await uploadString(storageRef, file, "base64");
+        console.log("Updated the file");
+        await updateMetadata(storageRef, metadata);
 
-    res.status(200).send(metadata);
+        res.status(200).send("Updated this version of the pacakge");
+      } else {
+        console.error("Metadata is not founded.");
+        res.status(500).send("Metadata is not founded.");
+      }
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send(error);
