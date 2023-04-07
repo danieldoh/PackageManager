@@ -1,4 +1,3 @@
-// const functions = require("firebase-functions");
 import * as functions from "firebase-functions";
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -65,15 +64,17 @@ async function checkUsername(
   const doc = await users.get();
   if (!doc.exists) {
     const firebaseToken = await admin.auth().createCustomToken(username);
+    const idtoken = "Bearer " + firebaseToken;
     const newUser = db.collection("users");
-    await newUser.doc(username).set({
+    await newUser.doc(idtoken).set({
+      Username: username,
       Password: password,
-      IdToken: firebaseToken,
+      IdToken: idtoken,
       Admin: Admin,
     });
     console.log("action checking");
     console.log("action testing");
-    return [true, firebaseToken];
+    return [true, idtoken];
   } else {
     return [false, "Failed"];
   }
