@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
 import { initializeApp } from "firebase/app";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
-import { getFirestore } from "firebase-admin/firestore";
+//import { getFirestore } from "firebase-admin/firestore";
 //import { firebaseApp } from "../services/firebase";
 const firebaseConfig = initializeApp({
     apiKey: "AIzaSyBv0YpZub_rr-nQ_fil5DhUjQGpPV9e6jQ",
@@ -46,7 +46,7 @@ export const fileDownload = functions.https.onRequest(async (req: Req, res: Res)
                 const xhr = new XMLHttpRequest();
                 xhr.responseType = 'blob';
                 xhr.onload = (event) => {
-                    const blob = xhr.response;
+                    //const blob = xhr.response;
                 };
                 xhr.open('GET', url);
                 xhr.send();
