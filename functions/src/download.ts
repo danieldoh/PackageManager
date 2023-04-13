@@ -37,7 +37,7 @@ export const fileDownload = functions.https.onRequest(async (req: Req, res: Res)
         
         // Create a ref from an HTTPS URL
         //const httpsRef = ref(storage, 'https://console.firebase.google.com/u/0/project/rest-api-b6587/storage/rest-api-b6587.appspot.com/files/~2Fpackage?hl=ko');
-
+        
         // Storage download by url
         getDownloadURL(gcsRef)
             .then((url) => {
