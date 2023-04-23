@@ -1,13 +1,30 @@
-const upload = require("./upload");
-const auth = require("./auth");
-const update = require("./update");
-const ingestion = require("./ingestion");
+import * as functions from "firebase-functions";
+import express from "express";
+import {uploadFile} from "./upload";
+import {fileDelete} from "./delete";
+import {updateFile} from "./update";
+import {downloadFile} from "./download";
+import {auth} from "./auth";
+import {history} from "./history";
+import {deleteAll} from "./deleteAll";
+import {reset} from "./reset";
 
-// this is for github actions testing
-exports.auth = auth.auth;
-console.log("authentication function is ready");
-exports.upload = upload.uploadFile;
-console.log("upload function is ready");
-exports.update = update.updateFile;
-console.log("update function is ready");
-exports.ingestion = ingestion.ingestionURL;
+const api = express();
+
+// api.post("/packages", downloadFile); // package"s", get the packages
+api.delete("/package/reset", reset); // Reset the registry
+api.get("/package/:packageID", downloadFile); // return this package
+api.put("/package/:packageID", updateFile); // update the following package ID
+api.delete("/package/:packageID", fileDelete);
+api.post("/package", uploadFile); // package, upload
+// api.get("/package/:packageID/rate", rate);
+api.put("/authenticate", auth);
+api.get("/package/byName/:packageName", history);
+api.delete("/package/byName/:packageName", deleteAll);
+// api.post("/package/byRegEx", search);
+
+exports.api = functions.https.onRequest(api);
+
+// delete the ID collection, too -> maybe we should put ID inside the package collection
+
+// fix the validation -> should be able to do it from "default user"

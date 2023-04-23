@@ -1,19 +1,14 @@
 import * as functions from "firebase-functions";
+import {Request, Response} from "express";
 const admin = require("firebase-admin");
 admin.initializeApp();
 const cors = require("cors")({origin: true});
 
-type Req = functions.https.Request;
-type Res = functions.Response
 
-exports.auth = functions.https.onRequest((req: Req, res: Res) => {
+const auth = (req: Request, res: Response) => {
   const username: string = req.body.username;
   try {
     return cors(req, res, async () => {
-      if (req.method !== "POST") {
-        return res.status(403).json("Not POST");
-      }
-
       if (!username) {
         return res.status(400).json("No Username is Found");
       }
@@ -33,7 +28,7 @@ exports.auth = functions.https.onRequest((req: Req, res: Res) => {
 
       const valid = await checkUsername(username, password, Admin);
       if (!valid[0]) {
-        return res.status(401).json("Username is already taken");
+        return res.status(401).json("Username is already taken. Invalid.");
       }
 
       return res.status(200).json({token: valid[1]});
@@ -42,7 +37,7 @@ exports.auth = functions.https.onRequest((req: Req, res: Res) => {
     functions.logger.error({User: username}, error);
     return res.sendStatus(500);
   }
-});
+};
 
 import {getFirestore} from "firebase-admin/firestore";
 
@@ -65,18 +60,17 @@ async function checkUsername(
   if (!doc.exists) {
     const firebaseToken = await admin.auth().createCustomToken(username);
     const idtoken = "Bearer " + firebaseToken;
-    const newUser = db.collection("users");
-    await newUser.doc(idtoken).set({
+    const newToken = db.collection("users");
+    await newToken.doc(idtoken).set({
       Username: username,
       Password: password,
       IdToken: idtoken,
       Admin: Admin,
     });
-    console.log("action checking");
-    console.log("action testing");
     return [true, idtoken];
   } else {
     return [false, "Failed"];
   }
 }
 
+export {auth};

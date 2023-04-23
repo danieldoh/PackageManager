@@ -6,23 +6,37 @@ const admin = require("firebase-admin");
 /**
  * Validate JWT token and check the access
  * @param {string} token
- * @returns {boolean}
+ * @return {[boolean, string]}
  */
 async function validation(token) {
     const db = (0, firestore_1.getFirestore)(admin.apps[0]);
     const userRef = db.collection("users").doc(token);
-    const doc = await userRef.get();
-    if (doc.exists) {
-        const docData = doc.data();
-        const access = docData["Admin"];
-        if (access == 'true') {
-            return true;
+    const docUser = await userRef.get();
+    const defaultRef = db.collection("Default Admin").doc(token);
+    const docDefault = await defaultRef.get();
+    if (docUser.exists) {
+        const docData = docUser.data();
+        const access = docData === null || docData === void 0 ? void 0 : docData["Admin"];
+        const Username = docData === null || docData === void 0 ? void 0 : docData["Username"];
+        if (access == "true") {
+            return [true, Username];
         }
         else {
-            return false;
+            return [false, "Undefined"];
         }
     }
-    return false;
+    else if (docDefault.exists) {
+        const docData = docDefault.data();
+        const access = docData === null || docData === void 0 ? void 0 : docData["Admin"];
+        const Username = docData === null || docData === void 0 ? void 0 : docData["Username"];
+        if (access == "true") {
+            return [true, Username];
+        }
+        else {
+            return [false, "Undefined"];
+        }
+    }
+    return [false, "Undefined"];
 }
 exports.validation = validation;
 //# sourceMappingURL=validate.js.map

@@ -23,17 +23,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.auth = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = require("firebase-admin");
 admin.initializeApp();
 const cors = require("cors")({ origin: true });
-exports.auth = functions.https.onRequest((req, res) => {
+const auth = (req, res) => {
     const username = req.body.username;
     try {
         return cors(req, res, async () => {
-            if (req.method !== "POST") {
-                return res.status(403).json("Not POST");
-            }
             if (!username) {
                 return res.status(400).json("No Username is Found");
             }
@@ -50,7 +48,7 @@ exports.auth = functions.https.onRequest((req, res) => {
             }
             const valid = await checkUsername(username, password, Admin);
             if (!valid[0]) {
-                return res.status(401).json("Username is already taken");
+                return res.status(401).json("Username is already taken. Invalid.");
             }
             return res.status(200).json({ token: valid[1] });
         });
@@ -59,7 +57,8 @@ exports.auth = functions.https.onRequest((req, res) => {
         functions.logger.error({ User: username }, error);
         return res.sendStatus(500);
     }
-});
+};
+exports.auth = auth;
 const firestore_1 = require("firebase-admin/firestore");
 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
 /**
@@ -75,15 +74,13 @@ async function checkUsername(username, password, Admin) {
     if (!doc.exists) {
         const firebaseToken = await admin.auth().createCustomToken(username);
         const idtoken = "Bearer " + firebaseToken;
-        const newUser = db.collection("users");
-        await newUser.doc(idtoken).set({
+        const newToken = db.collection("users");
+        await newToken.doc(idtoken).set({
             Username: username,
             Password: password,
             IdToken: idtoken,
             Admin: Admin,
         });
-        console.log("action checking");
-        console.log("action testing");
         return [true, idtoken];
     }
     else {
