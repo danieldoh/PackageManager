@@ -8,6 +8,7 @@ import {auth} from "./auth";
 import {history} from "./history";
 import {deleteAll} from "./deleteAll";
 import {reset} from "./reset";
+import {search} from "./regex";
 
 const api = express();
 
@@ -21,10 +22,8 @@ api.post("/package", uploadFile); // package, upload
 api.put("/authenticate", auth);
 api.get("/package/byName/:packageName", history);
 api.delete("/package/byName/:packageName", deleteAll);
-// api.post("/package/byRegEx", search);
+api.post("/package/byRegEx", search);
 
 exports.api = functions.https.onRequest(api);
 
 // delete the ID collection, too -> maybe we should put ID inside the package collection
-
-// fix the validation -> should be able to do it from "default user"

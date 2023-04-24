@@ -6,7 +6,7 @@ import {Request, Response} from "express";
 import {validation} from "./validate";
 const admin = require("firebase-admin");
 
-const deleteAll = async (req: Request, res: Response) => {
+const search = async (req: Request, res: Response) => {
   const packageName = req.params["packageName"];
   let token: string | string[] | undefined = req.headers["x-authorization"];
   if (token && packageName) {
@@ -42,4 +42,4 @@ const deleteAll = async (req: Request, res: Response) => {
   }
 };
 
-export {deleteAll};
+export {search};

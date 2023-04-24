@@ -4,9 +4,8 @@ import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {firebaseConfig} from "./firebase";
 import {Request, Response} from "express";
 import {validation} from "./validate";
-import * as https from "https";
-// import * as zlib from "zlib";
-import {Buffer} from "buffer";
+const fetch = require("node-fetch");
+const fs = require("fs");
 const admin = require("firebase-admin");
 
 interface historyJson {
@@ -23,25 +22,41 @@ interface historyJson {
   Action: string;
 }
 
-const downloadFile = (url = "https://github.com/lodash/lodash/archive/master.zip"): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
-      const chunks: Buffer[] = [];
-      response
-        .on("data", (chunk: Buffer) => chunks.push(chunk))
-        .on("end", () => {
-          const buffer = Buffer.concat(chunks);
-          const base64String = buffer.toString("base64");
-          resolve(base64String);
-        })
-        .on("error", reject);
-    });
-  });
-};
+interface responseJson {
+  metadata: {
+    Name: string,
+    Version: string,
+    ID: string,
+  };
+  data: {
+    Content: string
+  };
+}
+
+/**
+ * Downlaod file using URL
+ * @param {string} url
+ * @param {string} filename
+ * @return {string}
+ */
+async function downloadFile(url: string, filename: string): Promise<string> {
+  const response = await fetch(url);
+
+  // check if the request was successful
+  if (response.status != 200) {
+    throw new Error(`Unable to download file. HTTP status: ${response.status}`);
+  }
+  const buffer = await response.buffer();
+  const base64String: string = buffer.toString("base64");
+  fs.writeFileSync(filename, buffer);
+  console.log("File downloaded successfully");
+  return base64String;
+}
 
 const uploadFile = async (req: Request, res: Response) => {
-  const token: string | undefined = req.headers.authorization;
+  let token: string | string[] | undefined = req.headers["x-authorization"];
   if (token) {
+    token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {
@@ -51,16 +66,17 @@ const uploadFile = async (req: Request, res: Response) => {
           content = data.Content;
         } else if (data.URL) {
           console.log(data.URL);
-          const base64String = await downloadFile(data.URL);
-          content = base64String;
+          await downloadFile(data.URL, "/tmp/dummy.zip").then((str) => {
+            content = str;
+            console.log(content);
+          });
         }
-        const file = content;
         const firebaseApp = initializeApp(firebaseConfig);
         const storage = getStorage(firebaseApp);
         const db = getFirestore(admin.apps[0]);
         const filename = metadata.ID + ".bin";
         const storageRef = ref(storage, `${metadata.Name}/${filename}`);
-        await uploadString(storageRef, file, "base64");
+        await uploadString(storageRef, content, "base64");
         updateMetadata(storageRef, metadata);
         const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
         const IdRef = db.collection("ID").doc(metadata.ID);
@@ -79,6 +95,7 @@ const uploadFile = async (req: Request, res: Response) => {
           await storageFolder.doc(metadata.Name).set({
             Folder: metadata.Name,
           });
+          // History
           const timeDate = new Date().toLocaleString();
           const history: historyJson = {
             User: {
@@ -91,7 +108,7 @@ const uploadFile = async (req: Request, res: Response) => {
               Version: metadata.Version,
               Id: metadata.ID,
             },
-            Action: "Upload",
+            Action: "CREATE",
           };
           const historyRef = db.collection(metadata.Name).doc("history");
           const historyDoc = await historyRef.get();
@@ -104,6 +121,7 @@ const uploadFile = async (req: Request, res: Response) => {
               history: [history],
             });
           }
+          // ID
           const newID = db.collection("ID");
           await newID.doc(metadata.ID).set({
             Name: metadata.Name,
@@ -114,7 +132,17 @@ const uploadFile = async (req: Request, res: Response) => {
         } else {
           res.status(409).send("Package exists already.");
         }
-        res.status(200).send(req.body);
+        const responseInfo: responseJson = {
+          metadata: {
+            Name: metadata.Name,
+            Version: metadata.Version,
+            ID: metadata.ID,
+          },
+          data: {
+            Content: content,
+          },
+        };
+        res.status(200).send(responseInfo);
       } catch (error) {
         console.error(error);
         res.status(500).send(error);

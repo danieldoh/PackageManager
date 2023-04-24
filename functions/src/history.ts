@@ -19,8 +19,9 @@ interface historyJson {
 
 const history = async (req: Request, res: Response) => {
   const packageName = req.params["packageName"];
-  const token: string | undefined = req.headers.authorization;
+  let token: string | string[] | undefined = req.headers["x-authorization"];
   if (token && packageName) {
+    token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {

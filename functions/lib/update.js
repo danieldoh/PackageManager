@@ -31,6 +31,33 @@ const updateFile = async (req, res) => {
                     if (name == metadata.Name && version == metadata.Version && id == metadata.ID) {
                         await (0, storage_1.uploadString)(storageRef, file, "base64");
                         console.log("Updated the file");
+                        const pacakgeHistoryRef = db.collection(metadata.Name);
+                        const timeDate = new Date().toLocaleString();
+                        const history = {
+                            User: {
+                                name: authentication[1],
+                                isAdmin: authentication[0],
+                            },
+                            Date: timeDate,
+                            PackageMetadata: {
+                                Name: metadata.Name,
+                                Version: metadata.Version,
+                                Id: metadata.ID,
+                            },
+                            Action: "UPDATE",
+                        };
+                        const historyRef = db.collection(metadata.Name).doc("history");
+                        const historyDoc = await historyRef.get();
+                        if (historyDoc.exists) {
+                            await pacakgeHistoryRef.doc("history").update({
+                                history: firestore_1.FieldValue.arrayUnion(history),
+                            });
+                        }
+                        else {
+                            await pacakgeHistoryRef.doc("history").set({
+                                history: [history],
+                            });
+                        }
                         await (0, storage_1.updateMetadata)(storageRef, metadata);
                         res.status(200).send("Updated the package");
                     }

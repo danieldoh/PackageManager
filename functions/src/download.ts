@@ -20,8 +20,9 @@ interface typeJson {
 // and loop over the list of collections and check the versions by version pinning?
 const downloadFile = async (req: Request, res: Response) => {
   const packageID = req.params["packageID"];
-  const token: string | undefined = req.headers.authorization;
+  let token: string | string[] | undefined = req.headers["x-authorization"];
   if (token) {
+    token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {

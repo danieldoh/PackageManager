@@ -24,6 +24,33 @@ const fileDelete = async (req, res) => {
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
                 const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
                 await packagesRef.delete();
+                const pacakgeHistoryRef = db.collection(metadata.Name);
+                const timeDate = new Date().toLocaleString();
+                const history = {
+                    User: {
+                        name: authentication[1],
+                        isAdmin: authentication[0],
+                    },
+                    Date: timeDate,
+                    PackageMetadata: {
+                        Name: metadata.Name,
+                        Version: metadata.Version,
+                        Id: metadata.ID,
+                    },
+                    Action: "DELETE",
+                };
+                const historyRef = db.collection(metadata.Name).doc("history");
+                const historyDoc = await historyRef.get();
+                if (historyDoc.exists) {
+                    await pacakgeHistoryRef.doc("history").update({
+                        history: firestore_1.FieldValue.arrayUnion(history),
+                    });
+                }
+                else {
+                    await pacakgeHistoryRef.doc("history").set({
+                        history: [history],
+                    });
+                }
                 res.status(200).send("Package is deleted");
             }
             catch (err) {

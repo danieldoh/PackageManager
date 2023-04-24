@@ -7,8 +7,9 @@ import {validation} from "./validate";
 const admin = require("firebase-admin");
 
 const reset = async (req: Request, res: Response) => {
-  const token: string | undefined = req.headers.authorization;
+  let token: string | string[] | undefined = req.headers["x-authorization"];
   if (token) {
+    token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {
