@@ -4,38 +4,53 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const cors = require("cors")({origin: true});
 
+interface userJson {
+  User: {
+    name: string,
+    isAdmin: boolean,
+  };
+  Secret: {
+    password: string,
+  };
+}
 
 const auth = (req: Request, res: Response) => {
-  const username: string = req.body.username;
+  const info: userJson = req.body;
+  const user = info["User"];
+  const secret = info["Secret"];
+  const username = user["name"];
+  const isAdmin = user["isAdmin"];
+  const password = secret["password"];
   try {
     return cors(req, res, async () => {
       if (!username) {
-        return res.status(400).json("No Username is Found");
+        console.log("Authenticate: no username");
+        return res.status(400).send("There is missing field(s) in the AuthenticationRequest or it is formed improperly.");
       }
-
-      const password = req.body.password;
       if (!password) {
-        return res.status(400).json("No Password is Found");
+        console.log("Authenticate: no password");
+        return res.status(400).json("There is missing field(s) in the AuthenticationRequest or it is formed improperly.");
       }
-
-      const Admin = req.body.Admin;
-      if (!Admin) {
-        return res.status(400).json("No Admin is Found");
+      if (!isAdmin) {
+        console.log("Authenticate: no isAdmin");
+        return res.status(400).json("There is missing field(s) in the AuthenticationRequest or it is formed improperly.");
       }
-      if (Admin != "true" && Admin != "false") {
-        return res.status(400).json("Should be either true or false");
+      if (isAdmin != true && isAdmin != false) {
+        console.log("Authenticate: wrong format of isAdmin");
+        return res.status(400).json("There is missing field(s) in the AuthenticationRequest or it is formed improperly.");
       }
-
-      const valid = await checkUsername(username, password, Admin);
+      const valid = await checkUsername(username, password, isAdmin);
       if (!valid[0]) {
-        return res.status(401).json("Username is already taken. Invalid.");
+        console.log(`The user or password is invalid, Username: ${username} Password: ${password}`);
+        return res.status(401).json("The user or password is invalid");
       }
-
+      console.log("Authentication: Token is created");
       return res.status(200).json({token: valid[1]});
     });
   } catch (error) {
     functions.logger.error({User: username}, error);
-    return res.sendStatus(500);
+    console.error(error);
+    return res.status(501).send("This system does not support authentication.");
   }
 };
 
@@ -47,18 +62,19 @@ const db = getFirestore(admin.apps[0]);
  * Generate token for the username and store in the db
  * @param {string} username
  * @param {string} password
- * @param {string} Admin
+ * @param {boolean} Admin
  * @return {[boolean, string]}
  */
 async function checkUsername(
   username: string,
   password: string,
-  Admin: string
+  Admin: boolean
 ): Promise<[boolean, string]> {
   const users = db.collection("users").doc(username);
   const doc = await users.get();
   if (!doc.exists) {
     const firebaseToken = await admin.auth().createCustomToken(username);
+    console.log("Token is created");
     const idtoken = "Bearer " + firebaseToken;
     const newToken = db.collection("users");
     await newToken.doc(idtoken).set({

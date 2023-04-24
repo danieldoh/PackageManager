@@ -9,8 +9,11 @@ const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const deleteAll = async (req, res) => {
     const packageName = req.params["packageName"];
-    const token = req.headers.authorization;
+    console.log(`DeleteAll: packageName ${packageName}`);
+    let token = req.headers["x-authorization"];
+    console.log(`DeleteAll: ${token}`);
     if (token && packageName) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {
@@ -21,12 +24,24 @@ const deleteAll = async (req, res) => {
                 for (const item of fileList.items) {
                     await (0, storage_1.deleteObject)((0, storage_1.ref)(storage, item.fullPath));
                 }
+                console.log("DeleteAll: deleted from storage");
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
                 const packagesRef = db.collection(packageName);
                 const docs = await packagesRef.get();
+                const idArray = [];
                 docs.forEach((doc) => {
+                    const docData = doc.data();
+                    if (docData["ID"] != undefined) {
+                        idArray.push(docData["ID"]);
+                    }
                     doc.ref.delete();
                 });
+                console.log("DeleteAll: deleted from firestore");
+                console.log(idArray);
+                for (const id of idArray) {
+                    const tempIdRef = db.collection("ID").doc(id);
+                    await tempIdRef.delete();
+                }
                 const storageFolder = db.collection("storage").doc(packageName);
                 await storageFolder.delete();
                 res.status(200).send("Package is deleted");
@@ -37,11 +52,13 @@ const deleteAll = async (req, res) => {
             }
         }
         else {
+            console.log("DeleteAll: Wrong authentication token");
             res.status(400).send("The AuthenticationToken is invalid.");
         }
     }
     else {
-        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly.");
+        console.log("DeleteAll: Missing field(s)");
+        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
     }
 };
 exports.deleteAll = deleteAll;

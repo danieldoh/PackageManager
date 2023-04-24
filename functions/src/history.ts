@@ -19,7 +19,9 @@ interface historyJson {
 
 const history = async (req: Request, res: Response) => {
   const packageName = req.params["packageName"];
+  console.log(`history: packageId ${packageName}`);
   let token: string | string[] | undefined = req.headers["x-authorization"];
+  console.log(`history: ${token}`);
   if (token && packageName) {
     token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
@@ -29,6 +31,7 @@ const history = async (req: Request, res: Response) => {
         const packagesRef = db.collection(packageName).doc("history");
         const doc = await packagesRef.get();
         if (doc.exists) {
+          console.log("history: found the packageName in firestore");
           const docData: DocumentData | undefined = doc.data();
           const allHistory: historyJson[] = docData?.["history"];
           res.status(200).send(allHistory);
@@ -40,10 +43,12 @@ const history = async (req: Request, res: Response) => {
         res.status(404).send("No Such Package");
       }
     } else {
+      console.log("history: wrong token");
       res.status(400).send("The AuthenticationToken is invalid.");
     }
   } else {
-    res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly.");
+    console.log("history: missing field(s)");
+    res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
   }
 };
 

@@ -1,6 +1,6 @@
 import {initializeApp} from "firebase/app";
 import {getStorage, ref, deleteObject} from "firebase/storage";
-import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {getFirestore, FieldValue, DocumentData} from "firebase-admin/firestore";
 import {firebaseConfig} from "./firebase";
 import {Request, Response} from "express";
 import {validation} from "./validate";
@@ -22,23 +22,33 @@ interface historyJson {
 
 const fileDelete = async (req: Request, res: Response) => {
   const packageID = req.params["packageID"];
+  console.log(`Delete: packageID ${packageID}`);
   let token: string | string[] | undefined = req.headers["x-authorization"];
+  console.log(`Delete: ${token}`);
   if (token && packageID) {
     token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {
-        const {metadata} = JSON.parse(JSON.stringify(req.body));
-        console.log(firebaseConfig);
         const firebaseApp = initializeApp(firebaseConfig);
         const storage = getStorage(firebaseApp);
         const filename = packageID + ".bin";
-        const storageRef = ref(storage, `${metadata.Name}/${filename}`);
-        await deleteObject(storageRef);
         const db = getFirestore(admin.apps[0]);
-        const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
+        const IdRef = db.collection("ID").doc(packageID);
+        const IdDoc = await IdRef.get();
+        const IdDocData: DocumentData | undefined = IdDoc.data();
+        const name: string = IdDocData?.["Name"];
+        const version: string = IdDocData?.["Version"];
+        const id: string = IdDocData?.["ID"];
+        const storageRef = ref(storage, `${name}/${filename}`);
+        await deleteObject(storageRef);
+        console.log("delete: deleted from storage");
+        const packagesRef = db.collection(name).doc(version);
         await packagesRef.delete();
-        const pacakgeHistoryRef = db.collection(metadata.Name);
+        console.log("delete: deleted package collection");
+        await IdRef.delete();
+        console.log("delete: deleted id collection");
+        const pacakgeHistoryRef = db.collection(name);
         const timeDate = new Date().toLocaleString();
         const history: historyJson = {
           User: {
@@ -47,13 +57,13 @@ const fileDelete = async (req: Request, res: Response) => {
           },
           Date: timeDate,
           PackageMetadata: {
-            Name: metadata.Name,
-            Version: metadata.Version,
-            Id: metadata.ID,
+            Name: name,
+            Version: version,
+            Id: id,
           },
           Action: "DELETE",
         };
-        const historyRef = db.collection(metadata.Name).doc("history");
+        const historyRef = db.collection(name).doc("history");
         const historyDoc = await historyRef.get();
         if (historyDoc.exists) {
           await pacakgeHistoryRef.doc("history").update({
@@ -64,15 +74,19 @@ const fileDelete = async (req: Request, res: Response) => {
             history: [history],
           });
         }
+        console.log("delete: Package is deleted");
         res.status(200).send("Package is deleted");
       } catch (err) {
+        console.log(err);
         res.status(404).send("Package does not exist.");
       }
     } else {
+      console.log("Delete: The AuthenticationToken is invalid. ")
       res.status(400).send("The AuthenticationToken is invalid.");
     }
   } else {
-    res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly.");
+    console.log("Delete: There is missing field(s)");
+    res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid");
   }
 };
 

@@ -15,27 +15,34 @@ async function validation(token) {
     const defaultRef = db.collection("Default Admin").doc(token);
     const docDefault = await defaultRef.get();
     if (docUser.exists) {
+        console.log("validate: found the user");
         const docData = docUser.data();
         const access = docData === null || docData === void 0 ? void 0 : docData["Admin"];
         const Username = docData === null || docData === void 0 ? void 0 : docData["Username"];
         if (access == "true") {
+            console.log("validate: isAdmin");
             return [true, Username];
         }
         else {
+            console.log("validate: not isAdmin");
             return [false, "Undefined"];
         }
     }
     else if (docDefault.exists) {
+        console.log("validate: found the default user");
         const docData = docDefault.data();
         const access = docData === null || docData === void 0 ? void 0 : docData["Admin"];
         const Username = docData === null || docData === void 0 ? void 0 : docData["Username"];
         if (access == "true") {
+            console.log("validate: default isAdmin");
             return [true, Username];
         }
         else {
+            console.log("validate: default not isAdmin");
             return [false, "Undefined"];
         }
     }
+    console.log("validate: not found any user and default user");
     return [false, "Undefined"];
 }
 exports.validation = validation;

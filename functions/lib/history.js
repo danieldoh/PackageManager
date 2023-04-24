@@ -6,8 +6,11 @@ const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const history = async (req, res) => {
     const packageName = req.params["packageName"];
-    const token = req.headers.authorization;
+    console.log(`history: packageId ${packageName}`);
+    let token = req.headers["x-authorization"];
+    console.log(`history: ${token}`);
     if (token && packageName) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {
@@ -15,6 +18,7 @@ const history = async (req, res) => {
                 const packagesRef = db.collection(packageName).doc("history");
                 const doc = await packagesRef.get();
                 if (doc.exists) {
+                    console.log("history: found the packageName in firestore");
                     const docData = doc.data();
                     const allHistory = docData === null || docData === void 0 ? void 0 : docData["history"];
                     res.status(200).send(allHistory);
@@ -29,11 +33,13 @@ const history = async (req, res) => {
             }
         }
         else {
+            console.log("history: wrong token");
             res.status(400).send("The AuthenticationToken is invalid.");
         }
     }
     else {
-        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly.");
+        console.log("history: missing field(s)");
+        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
     }
 };
 exports.history = history;

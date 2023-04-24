@@ -22,7 +22,9 @@ interface historyJson {
 
 const updateFile = async (req: Request, res: Response) => {
   const packageID = req.params["packageID"];
+  console.log(`update: packageID ${packageID}`);
   let token: string | string[] | undefined = req.headers["x-authorization"];
+  console.log(`update: ${token}`);
   if (token && packageID) {
     token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
@@ -30,20 +32,30 @@ const updateFile = async (req: Request, res: Response) => {
       try {
         const {data, metadata} = JSON.parse(JSON.stringify(req.body));
         const file = data.Content;
+        let url = "undefined";
+        if (data.URL) {
+          url = data.URL;
+        }
         const firebaseApp = initializeApp(firebaseConfig);
         const storage = getStorage(firebaseApp);
         const db = getFirestore(admin.apps[0]);
         const filename = packageID + ".bin";
         const storageRef = ref(storage, `${metadata.Name}/${filename}`);
         const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
+        const IdRef = db.collection("ID").doc(packageID);
+        const IdDoc = await IdRef.get();
         const doc = await packagesRef.get();
-        if (doc.exists) {
-          const docData: DocumentData | undefined = doc.data();
-          const name: string = docData?.["Name"];
-          const version: string = docData?.["Version"];
-          const id: string = docData?.["ID"];
+        if (doc.exists && IdDoc.exists) {
+          console.log("update: found packageName and ID documents");
+          const IdDocData: DocumentData | undefined = IdDoc.data();
+          const name: string = IdDocData?.["Name"];
+          const version: string = IdDocData?.["Version"];
+          const id: string = IdDocData?.["ID"];
           if (name == metadata.Name && version == metadata.Version && id == metadata.ID) {
+            console.log("update: all fields matched");
             await uploadString(storageRef, file, "base64");
+            await IdRef.update({Repository_URL: url});
+            await packagesRef.update({Repository_URL: url});
             console.log("Updated the file");
             const pacakgeHistoryRef = db.collection(metadata.Name);
             const timeDate = new Date().toLocaleString();
@@ -74,18 +86,24 @@ const updateFile = async (req: Request, res: Response) => {
             await updateMetadata(storageRef, metadata);
             res.status(200).send("Updated the package");
           } else {
+            console.log("update: some fields are not matching");
             res.status(404).send("Package is not found.");
           }
+        } else {
+          console.log("update: packageId is not matching.");
+          res.status(404).send("Package is not found.");
         }
       } catch (error) {
         console.error(error);
         res.status(404).send("Package is not found.");
       }
     } else {
+      console.log("update: Wrong token");
       res.status(400).send("The AuthenticationToken is invalid.");
     }
   } else {
-    res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly.");
+    console.log("update: Missing field(s)");
+    res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
   }
 };
 

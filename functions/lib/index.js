@@ -40,7 +40,7 @@ const regex_1 = require("./regex");
 const api = (0, express_1.default)();
 // api.post("/packages", downloadFile); // package"s", get the packages
 api.delete("/package/reset", reset_1.reset); // Reset the registry
-api.get("/package/:packageID", download_1.downloadFile); // return this package
+api.get("/package/:packageID", download_1.downloadID); // return this package
 api.put("/package/:packageID", update_1.updateFile); // update the following package ID
 api.delete("/package/:packageID", delete_1.fileDelete);
 api.post("/package", upload_1.uploadFile); // package, upload

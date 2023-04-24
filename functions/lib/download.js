@@ -1,17 +1,39 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.downloadFile = void 0;
+exports.downloadID = void 0;
 // import { initializeApp } from "firebase/app";
 // import { firebaseConfig } from "./firebase";
 const firestore_1 = require("firebase-admin/firestore");
 const validate_1 = require("./validate");
+const fetch = require("node-fetch");
+const fs = require("fs");
 const admin = require("firebase-admin");
+/**
+ * Downlaod file using URL
+ * @param {string} url
+ * @param {string} filename
+ * @return {string}
+ */
+async function downloadURL(url, filename) {
+    const response = await fetch(url);
+    if (response.status != 200) {
+        throw new Error(`Unable to download file. HTTP status: ${response.status}`);
+    }
+    const buffer = await response.buffer();
+    const base64String = buffer.toString("base64");
+    fs.writeFileSync(filename, buffer);
+    console.log("File downloaded successfully");
+    return base64String;
+}
 // get list of collections and remove 'token' from it
 // and loop over the list of collections and check the versions by version pinning?
-const downloadFile = async (req, res) => {
+const downloadID = async (req, res) => {
     const packageID = req.params["packageID"];
-    const token = req.headers.authorization;
+    console.log(`download: packageId ${packageID}`);
+    let token = req.headers["x-authorization"];
+    console.log(`download: ${token}`);
     if (token) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {
@@ -19,37 +41,50 @@ const downloadFile = async (req, res) => {
                 const idRef = db.collection("ID").doc(packageID);
                 const idInfo = await idRef.get();
                 if (idInfo.exists) {
+                    console.log("download: found the package");
                     const idData = idInfo.data();
+                    console.log(idData);
                     const packageName = idData === null || idData === void 0 ? void 0 : idData["Name"];
                     const packageVersion = idData === null || idData === void 0 ? void 0 : idData["Version"];
                     const url = idData === null || idData === void 0 ? void 0 : idData["Download_URL"];
-                    const info = {
-                        metadata: {
-                            Name: packageName,
-                            Version: packageVersion,
-                            ID: packageID,
-                        },
-                        data: {
-                            Content: url,
-                        },
-                    };
-                    res.status(200).send(info);
+                    const repoUrl = idData === null || idData === void 0 ? void 0 : idData["Repository_URL"];
+                    let content = "";
+                    await downloadURL(url, "/tmp/dummy.zip").then((str) => {
+                        content = str;
+                        console.log(content);
+                    });
+                    console.log("download: downloaded");
+                    if (repoUrl == "undefined") {
+                        const info = {
+                            metadata: {
+                                Name: packageName,
+                                Version: packageVersion,
+                                ID: packageID,
+                            },
+                            data: {
+                                Content: content,
+                            },
+                        };
+                        res.status(200).send(info);
+                    }
+                    else if (repoUrl != "undefined") {
+                        const info = {
+                            metadata: {
+                                Name: packageName,
+                                Version: packageVersion,
+                                ID: packageID,
+                            },
+                            data: {
+                                Content: content,
+                                URL: repoUrl,
+                            },
+                        };
+                        res.status(200).send(info);
+                    }
                 }
                 else {
                     res.status(404).send("Package does not exist.");
                 }
-                /* if (doc.exists) {
-                  const docData: any = doc.data();
-                  const url: string = docData["Download_URL"];
-                  const xhr = new XMLHttpRequest();
-                  xhr.responseType = 'blob';
-                  xhr.onload = (event) => {
-                    // const blob = xhr.response;
-                  }
-                  xhr.open('GET', url);
-                  xhr.send()
-                }
-                console.log(versionPinning)*/
             }
             catch (err) {
                 console.error(err);
@@ -57,12 +92,14 @@ const downloadFile = async (req, res) => {
             }
         }
         else {
-            res.status(401).send("Unauthorized");
+            console.log("download: wrong token");
+            res.status(401).send("The AuthenticationToken is invalid.");
         }
     }
     else {
-        res.status(404).send("Token is undefined");
+        console.log("download: missing field(s)");
+        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
     }
 };
-exports.downloadFile = downloadFile;
+exports.downloadID = downloadID;
 //# sourceMappingURL=download.js.map

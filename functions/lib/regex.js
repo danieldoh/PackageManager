@@ -1,47 +1,55 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.search = void 0;
-const app_1 = require("firebase/app");
-const storage_1 = require("firebase/storage");
 const firestore_1 = require("firebase-admin/firestore");
-const firebase_1 = require("./firebase");
 const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const search = async (req, res) => {
-    const packageName = req.params["packageName"];
-    const token = req.headers.authorization;
-    if (token && packageName) {
+    let token = req.headers["x-authorization"];
+    console.log(`regex: ${token}`);
+    if (token) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {
-                const firebaseApp = (0, app_1.initializeApp)(firebase_1.firebaseConfig);
-                const storage = (0, storage_1.getStorage)(firebaseApp);
-                const storageRef = (0, storage_1.ref)(storage, `${packageName}`);
-                const fileList = await (0, storage_1.listAll)(storageRef);
-                for (const item of fileList.items) {
-                    await (0, storage_1.deleteObject)((0, storage_1.ref)(storage, item.fullPath));
-                }
+                const regEx = req.body.RegEx;
+                console.log(`regex: regex = $(regEx)`);
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
-                const packagesRef = db.collection(packageName);
-                const docs = await packagesRef.get();
+                const packagesListRef = db.collection("storage");
+                const docs = await packagesListRef.get();
+                const nameArray = [];
                 docs.forEach((doc) => {
-                    doc.ref.delete();
+                    const docData = doc.data();
+                    const packageName = docData["Folder"];
+                    //const found = packageName.match(regEx);
+                    const found = regEx.test(packageName);
+                    if (found) {
+                        const packageInfo = {
+                            Version: "Not Yet",
+                            Name: packageName
+                        };
+                        nameArray.push(packageInfo);
+                    }
                 });
-                const storageFolder = db.collection("storage").doc(packageName);
-                await storageFolder.delete();
-                res.status(200).send("Package is deleted");
+                if (nameArray.length == 0) {
+                    console.log("regex: no package found under this regex.");
+                    res.status(404).send("No package found under this regex.");
+                }
+                res.status(200).send(nameArray);
             }
             catch (err) {
                 console.log(err);
-                res.status(404).send("Package does not exist.");
+                res.status(404).send("No package found under this regex.");
             }
         }
         else {
+            console.log("regex: wrong token");
             res.status(400).send("The AuthenticationToken is invalid.");
         }
     }
     else {
-        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly.");
+        console.log("regex: missing field(s)");
+        res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
     }
 };
 exports.search = search;

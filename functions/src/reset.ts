@@ -8,6 +8,7 @@ const admin = require("firebase-admin");
 
 const reset = async (req: Request, res: Response) => {
   let token: string | string[] | undefined = req.headers["x-authorization"];
+  console.log(`token: ${token}`);
   if (token) {
     token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
@@ -24,6 +25,7 @@ const reset = async (req: Request, res: Response) => {
         folderList.forEach((folder) => {
           folderArray.push(folder.id);
         });
+        console.log(`reset: list of folders ${folderArray}`);
         for (const folder of folderArray) {
           const folderRef = ref(storage, `${folder}`);
           const filelist = await listAll(folderRef);
@@ -31,13 +33,16 @@ const reset = async (req: Request, res: Response) => {
             await deleteObject(ref(storage, item.fullPath));
           }
         }
+        console.log("reset: deleted all from the storage");
         const colList = await db.listCollections();
+        console.log(`reset: list of collections ${colList}`);
         for (const col of colList) {
           const docs = await col.get();
           docs.forEach((doc) => {
             doc.ref.delete();
           });
         }
+        console.log("reset: deleted all from the firestore"); 
         // default admin
         const firebaseToken = await admin.auth().createCustomToken("Daniel Doh");
         const idToken = "Bearer " + firebaseToken;
@@ -48,15 +53,18 @@ const reset = async (req: Request, res: Response) => {
           IdToken: idToken,
           Admin: "true",
         });
+        console.log("reset: created the default admin");
         res.status(200).send("Registry is reset");
       } catch (err) {
         console.log(err);
         res.status(404).send("Package does not exist.");
       }
     } else {
+      console.log("reset: No permission");
       res.status(401).send("You do not have permission to reset the registry.");
     }
   } else {
+    console.log("reset: missing field(s)");
     res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
   }
 };
