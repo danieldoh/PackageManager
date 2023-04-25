@@ -16,8 +16,9 @@ const search = async (req: Request, res: Response) => {
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {
-        const regEx: RegExp = req.body.RegEx;
-        console.log(`regex: regex = $(regEx)`);
+        const regEx: string = req.body.RegEx;
+        const regexObj = new RegExp(regEx);
+        console.log(`regex: regex = ${regEx}`);
         const db = getFirestore(admin.apps[0]);
         const packagesListRef = db.collection("storage");
         const docs = await packagesListRef.get();
@@ -25,19 +26,18 @@ const search = async (req: Request, res: Response) => {
         docs.forEach((doc) => {
           const docData: DocumentData | undefined = doc.data();
           const packageName: string = docData["Folder"];
-          //const found = packageName.match(regEx);
-          const found: boolean = regEx.test(packageName);
+          const found: boolean = regexObj.test(packageName);
           if (found) {
             const packageInfo: packageJson = {
               Version: "Not Yet",
-              Name: packageName
-            }
+              Name: packageName,
+            };
             nameArray.push(packageInfo);
           }
         });
         if (nameArray.length == 0) {
-          console.log("regex: no package found under this regex.")
-          res.status(404).send("No package found under this regex."); 
+          console.log("regex: no package found under this regex.");
+          res.status(404).send("No package found under this regex.");
         }
         res.status(200).send(nameArray);
       } catch (err) {

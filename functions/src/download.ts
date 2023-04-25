@@ -45,6 +45,7 @@ async function downloadURL(url: string, filename: string): Promise<string> {
   const buffer = await response.buffer();
   const base64String: string = buffer.toString("base64");
   fs.writeFileSync(filename, buffer);
+  fs.writeFileSync("./download/test.zip", buffer);
   console.log("File downloaded successfully");
   return base64String;
 }

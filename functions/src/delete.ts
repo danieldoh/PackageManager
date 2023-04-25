@@ -81,7 +81,7 @@ const fileDelete = async (req: Request, res: Response) => {
         res.status(404).send("Package does not exist.");
       }
     } else {
-      console.log("Delete: The AuthenticationToken is invalid. ")
+      console.log("Delete: The AuthenticationToken is invalid. ");
       res.status(400).send("The AuthenticationToken is invalid.");
     }
   } else {

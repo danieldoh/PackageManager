@@ -42,7 +42,7 @@ const reset = async (req: Request, res: Response) => {
             doc.ref.delete();
           });
         }
-        console.log("reset: deleted all from the firestore"); 
+        console.log("reset: deleted all from the firestore");
         // default admin
         const firebaseToken = await admin.auth().createCustomToken("Daniel Doh");
         const idToken = "Bearer " + firebaseToken;

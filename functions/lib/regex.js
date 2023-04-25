@@ -13,6 +13,7 @@ const search = async (req, res) => {
         if (authentication[0]) {
             try {
                 const regEx = req.body.RegEx;
+                const regexObj = new RegExp(regEx);
                 console.log(`regex: regex = $(regEx)`);
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
                 const packagesListRef = db.collection("storage");
@@ -21,8 +22,7 @@ const search = async (req, res) => {
                 docs.forEach((doc) => {
                     const docData = doc.data();
                     const packageName = docData["Folder"];
-                    //const found = packageName.match(regEx);
-                    const found = regEx.test(packageName);
+                    const found = regexObj.test(packageName);
                     if (found) {
                         const packageInfo = {
                             Version: "Not Yet",
