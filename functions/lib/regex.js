@@ -14,7 +14,7 @@ const search = async (req, res) => {
             try {
                 const regEx = req.body.RegEx;
                 const regexObj = new RegExp(regEx);
-                console.log(`regex: regex = $(regEx)`);
+                console.log(`regex: regex = ${regEx}`);
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
                 const packagesListRef = db.collection("storage");
                 const docs = await packagesListRef.get();
@@ -26,7 +26,7 @@ const search = async (req, res) => {
                     if (found) {
                         const packageInfo = {
                             Version: "Not Yet",
-                            Name: packageName
+                            Name: packageName,
                         };
                         nameArray.push(packageInfo);
                     }

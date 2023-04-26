@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.downloadID = void 0;
-// import { initializeApp } from "firebase/app";
-// import { firebaseConfig } from "./firebase";
 const firestore_1 = require("firebase-admin/firestore");
 const validate_1 = require("./validate");
 const fetch = require("node-fetch");
@@ -22,12 +20,9 @@ async function downloadURL(url, filename) {
     const buffer = await response.buffer();
     const base64String = buffer.toString("base64");
     fs.writeFileSync(filename, buffer);
-    fs.writeFileSync("./download/test.zip", buffer);
-    console.log("File downloaded successfully");
+    console.log("downlaod: File downloaded successfully");
     return base64String;
 }
-// get list of collections and remove 'token' from it
-// and loop over the list of collections and check the versions by version pinning?
 const downloadID = async (req, res) => {
     const packageID = req.params["packageID"];
     console.log(`download: packageId ${packageID}`);

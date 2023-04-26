@@ -16,9 +16,11 @@ interface userJson {
 
 const auth = (req: Request, res: Response) => {
   const info: userJson = req.body;
+  console.log(`${info}`);
   const user = info["User"];
   const secret = info["Secret"];
   const username = user["name"];
+  console.log(username);
   const isAdmin = user["isAdmin"];
   const password = secret["password"];
   try {
@@ -45,7 +47,7 @@ const auth = (req: Request, res: Response) => {
         return res.status(401).json("The user or password is invalid");
       }
       console.log("Authentication: Token is created");
-      return res.status(200).json({token: valid[1]});
+      return res.status(200).send(valid[1]);
     });
   } catch (error) {
     functions.logger.error({User: username}, error);
@@ -76,8 +78,15 @@ async function checkUsername(
     const firebaseToken = await admin.auth().createCustomToken(username);
     console.log("Token is created");
     const idtoken = "Bearer " + firebaseToken;
-    const newToken = db.collection("users");
+    const newToken = db.collection("token");
     await newToken.doc(idtoken).set({
+      Username: username,
+      Password: password,
+      IdToken: idtoken,
+      Admin: Admin,
+    });
+    const newUser = db.collection("users");
+    await newUser.doc(username).set({
       Username: username,
       Password: password,
       IdToken: idtoken,

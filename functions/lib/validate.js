@@ -10,8 +10,8 @@ const admin = require("firebase-admin");
  */
 async function validation(token) {
     const db = (0, firestore_1.getFirestore)(admin.apps[0]);
-    const userRef = db.collection("users").doc(token);
-    const docUser = await userRef.get();
+    const tokenRef = db.collection("token").doc(token);
+    const docUser = await tokenRef.get();
     const defaultRef = db.collection("Default Admin").doc(token);
     const docDefault = await defaultRef.get();
     if (docUser.exists) {
@@ -19,7 +19,7 @@ async function validation(token) {
         const docData = docUser.data();
         const access = docData === null || docData === void 0 ? void 0 : docData["Admin"];
         const Username = docData === null || docData === void 0 ? void 0 : docData["Username"];
-        if (access == "true") {
+        if (access == true) {
             console.log("validate: isAdmin");
             return [true, Username];
         }

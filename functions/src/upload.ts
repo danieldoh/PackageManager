@@ -33,6 +33,17 @@ interface responseJson {
   };
 }
 
+/* interface rateJson {
+  BusFactor: string;
+  Correctness: string;
+  RampUp: string;
+  ResponsiveMaintainer: string;
+  LicenseScore: string;
+  GoodPinningPractice: string;
+  PullRequest: string;
+  NetScore: string;
+}*/
+
 /**
  * Downlaod file using URL
  * @param {string} originUrl
@@ -61,6 +72,8 @@ async function downloadFile(originUrl: string, filename: string): Promise<string
 }
 
 const uploadFile = async (req: Request, res: Response) => {
+  console.log(`upload(request body): ${req.body}`);
+  console.log(`upload(request headers): ${req.headers}`);
   let token: string | string[] | undefined = req.headers["x-authorization"];
   console.log(`upload: ${token}`);
   if (token) {
@@ -138,6 +151,10 @@ const uploadFile = async (req: Request, res: Response) => {
             });
           }
           // ID
+          const rate = {};
+          if (url != "undefined") {
+            console.log(`upload: rate = ${rate}`);
+          }
           const newID = db.collection("ID");
           await newID.doc(metadata.ID).set({
             Name: metadata.Name,
@@ -145,6 +162,7 @@ const uploadFile = async (req: Request, res: Response) => {
             ID: metadata.ID,
             Download_URL: url,
             Repository_URL: repoUrl,
+            Rate: rate,
           });
           console.log("upload: created the metadata under metadata ID document");
         } else {

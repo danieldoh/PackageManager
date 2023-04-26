@@ -37,18 +37,19 @@ const history_1 = require("./history");
 const deleteAll_1 = require("./deleteAll");
 const reset_1 = require("./reset");
 const regex_1 = require("./regex");
+const version_1 = require("./version");
+const rate_1 = require("./rate");
 const api = (0, express_1.default)();
-// api.post("/packages", downloadFile); // package"s", get the packages
+api.post("/packages", version_1.downloadVersion); // package"s", get the packages
 api.delete("/package/reset", reset_1.reset); // Reset the registry
 api.get("/package/:packageID", download_1.downloadID); // return this package
 api.put("/package/:packageID", update_1.updateFile); // update the following package ID
 api.delete("/package/:packageID", delete_1.fileDelete);
 api.post("/package", upload_1.uploadFile); // package, upload
-// api.get("/package/:packageID/rate", rate);
+api.get("/package/:packageID/rate", rate_1.rate);
 api.put("/authenticate", auth_1.auth);
 api.get("/package/byName/:packageName", history_1.history);
 api.delete("/package/byName/:packageName", deleteAll_1.deleteAll);
 api.post("/package/byRegEx", regex_1.search);
 exports.api = functions.https.onRequest(api);
-// delete the ID collection, too -> maybe we should put ID inside the package collection
 //# sourceMappingURL=index.js.map

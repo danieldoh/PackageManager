@@ -1,5 +1,3 @@
-// import { initializeApp } from "firebase/app";
-// import { firebaseConfig } from "./firebase";
 import {getFirestore, DocumentData} from "firebase-admin/firestore";
 import {Request, Response} from "express";
 import {validation} from "./validate";
@@ -45,13 +43,10 @@ async function downloadURL(url: string, filename: string): Promise<string> {
   const buffer = await response.buffer();
   const base64String: string = buffer.toString("base64");
   fs.writeFileSync(filename, buffer);
-  fs.writeFileSync("./download/test.zip", buffer);
-  console.log("File downloaded successfully");
+  console.log("downlaod: File downloaded successfully");
   return base64String;
 }
 
-// get list of collections and remove 'token' from it
-// and loop over the list of collections and check the versions by version pinning?
 const downloadID = async (req: Request, res: Response) => {
   const packageID = req.params["packageID"];
   console.log(`download: packageId ${packageID}`);
@@ -123,3 +118,4 @@ const downloadID = async (req: Request, res: Response) => {
 };
 
 export {downloadID};
+
