@@ -1,9 +1,12 @@
-import {getDownloadURL, getStorage, ref, updateMetadata, uploadString} from "firebase/storage";
+import {getDownloadURL, getStorage, ref, uploadString} from "firebase/storage";
 import {initializeApp} from "firebase/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {firebaseConfig} from "./firebase";
 import {Request, Response} from "express";
 import {validation} from "./validate";
+const crypto = require("crypto");
+const path = require("path");
+const AdmZip = require("adm-zip");
 const fetch = require("node-fetch");
 const fs = require("fs");
 const admin = require("firebase-admin");
@@ -33,6 +36,12 @@ interface responseJson {
   };
 }
 
+interface metadataJson{
+  name: string,
+  version: string,
+  id: string,
+}
+
 /* interface rateJson {
   BusFactor: string;
   Correctness: string;
@@ -43,6 +52,66 @@ interface responseJson {
   PullRequest: string;
   NetScore: string;
 }*/
+
+/**
+ * Generate ID
+ * @param {number} bytes
+ * @return {string}
+ */
+function getID(bytes: number): string {
+  return crypto.randomBytes(bytes).toString("hex");
+}
+
+/**
+ * Get metadata from package.json
+ * @param {Buffer} decodeBuf
+ * @param {string} tempID
+ * @return {metadataJson}
+ */
+async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<metadataJson> {
+  const zipFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/${firebaseConfig.tmp_folder}.zip`;
+  console.log(zipFilePath);
+  const extractPath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted`;
+  console.log(extractPath);
+  fs.mkdirSync(path.dirname(zipFilePath), {recursive: true});
+  console.log("Zip path created to:", path.dirname(zipFilePath));
+  // Write the buffer to the zip file
+  fs.writeFileSync(zipFilePath, decodeBuf);
+  console.log("Zip file saved to:", zipFilePath);
+
+  // Create the directory where the extracted files will be stored
+  fs.mkdirSync(extractPath, {recursive: true});
+  console.log("Extract path created:", extractPath);
+
+  // Use adm-zip to extract the contents of the zip file
+  const zip = new AdmZip(zipFilePath);
+  zip.extractAllTo(extractPath, true);
+  console.log("Zip file extracted to:", extractPath);
+
+  // Use fs.readdir() to get a list of files in extractPath
+  const files = fs.readdirSync(extractPath);
+  console.log("List of files in extractPath:", files);
+
+  const newFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/package`;
+  const oldFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/${files[0]}`;
+
+  fs.renameSync(oldFilePath, newFilePath);
+
+  // Read the package.json file and extract the name and version fields
+  const packageJsonPath = path.join(newFilePath, "package.json");
+  console.log("Reading package.json file:", packageJsonPath);
+  const packageJsonContent = fs.readFileSync(packageJsonPath, "utf-8");
+  const packageJson = JSON.parse(packageJsonContent);
+  console.log(packageJson);
+  let {name, version, id} = packageJson;
+  if (id == undefined ) {
+    id = tempID;
+  }
+  // Log the package information
+  const packageInfo: metadataJson = {name, version, id};
+  console.log("Package information:", packageInfo);
+  return packageInfo;
+}
 
 /**
  * Downlaod file using URL
@@ -81,47 +150,52 @@ const uploadFile = async (req: Request, res: Response) => {
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {
-        const {data, metadata} = JSON.parse(JSON.stringify(req.body));
+        const {Content, URL} = JSON.parse(JSON.stringify(req.body));
         let content = "";
         let repoUrl = "undefined";
-        if (data.Content) {
-          content = data.Content;
-        } else if (data.URL) {
-          console.log(data.URL);
-          repoUrl = data.URL;
-          await downloadFile(data.URL, "/tmp/dummy.zip").then((str) => {
+        if (Content) {
+          content = Content;
+        } else if (URL) {
+          console.log(URL);
+          repoUrl = URL;
+          await downloadFile(URL, "/tmp/dummy.zip").then((str) => {
             content = str;
             console.log(content);
           });
           console.log("upload: downloaded file from URL");
         }
+        const tempID = getID(4);
+        console.log(`Upload: ID ${tempID}`);
+        const decodebuf = Buffer.from(content, "base64");
+        const metadata = await getMetadata(decodebuf, tempID);
+
         const firebaseApp = initializeApp(firebaseConfig);
         const storage = getStorage(firebaseApp);
         const db = getFirestore(admin.apps[0]);
-        const filename = metadata.ID + ".bin";
-        const storageRef = ref(storage, `${metadata.Name}/${filename}`);
+        const filename = metadata["id"] + ".bin";
+        const storageRef = ref(storage, `${metadata["name"]}/${filename}`);
         await uploadString(storageRef, content, "base64");
         console.log("upload: uploaded the content(base64)");
-        updateMetadata(storageRef, metadata);
-        const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
-        const IdRef = db.collection("ID").doc(metadata.ID);
+
+        const packagesRef = db.collection(metadata["name"]).doc(metadata["version"]);
+        const IdRef = db.collection("ID").doc(metadata["id"]);
         const IdDoc = await IdRef.get();
         const doc = await packagesRef.get();
         if (!doc.exists && !IdDoc.exists) {
           console.log("upload: checked ");
           const url = await getDownloadURL(storageRef);
-          const newPackage = db.collection(metadata.Name);
-          await newPackage.doc(metadata.Version).set({
-            Name: metadata.Name,
-            Version: metadata.Version,
-            ID: metadata.ID,
+          const newPackage = db.collection(metadata["name"]);
+          await newPackage.doc(metadata["version"]).set({
+            Name: metadata["name"],
+            Version: metadata["version"],
+            ID: metadata["id"],
             Download_URL: url,
             Repository_URL: repoUrl,
           });
           console.log("upload: created new metadata under metadata name collection with new version");
           const storageFolder = db.collection("storage");
-          await storageFolder.doc(metadata.Name).set({
-            Folder: metadata.Name,
+          await storageFolder.doc(metadata["name"]).set({
+            Folder: metadata["name"],
           });
           console.log("upload: created the storage folder name document");
           // History
@@ -133,13 +207,13 @@ const uploadFile = async (req: Request, res: Response) => {
             },
             Date: timeDate,
             PackageMetadata: {
-              Name: metadata.Name,
-              Version: metadata.Version,
-              Id: metadata.ID,
+              Name: metadata["name"],
+              Version: metadata["version"],
+              Id: metadata["id"],
             },
             Action: "CREATE",
           };
-          const historyRef = db.collection(metadata.Name).doc("history");
+          const historyRef = db.collection(metadata["name"]).doc("history");
           const historyDoc = await historyRef.get();
           if (historyDoc.exists) {
             await newPackage.doc("history").update({
@@ -156,10 +230,10 @@ const uploadFile = async (req: Request, res: Response) => {
             console.log(`upload: rate = ${rate}`);
           }
           const newID = db.collection("ID");
-          await newID.doc(metadata.ID).set({
-            Name: metadata.Name,
-            Version: metadata.Version,
-            ID: metadata.ID,
+          await newID.doc(metadata["id"]).set({
+            Name: metadata["name"],
+            Version: metadata["version"],
+            ID: metadata["id"],
             Download_URL: url,
             Repository_URL: repoUrl,
             Rate: rate,
@@ -170,9 +244,9 @@ const uploadFile = async (req: Request, res: Response) => {
         }
         const responseInfo: responseJson = {
           metadata: {
-            Name: metadata.Name,
-            Version: metadata.Version,
-            ID: metadata.ID,
+            Name: metadata["name"],
+            Version: metadata["version"],
+            ID: metadata["id"],
           },
           data: {
             Content: content,
