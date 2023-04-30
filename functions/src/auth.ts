@@ -52,7 +52,7 @@ const auth = (req: Request, res: Response) => {
   } catch (error) {
     functions.logger.error({User: username}, error);
     console.error(error);
-    return res.status(501).send("This system does not support authentication.");
+    return res.status(400).send("There is missing field(s) in the AuthenticationRequest or it is formed improperly.");
   }
 };
 

@@ -44,7 +44,7 @@ const history = async (req: Request, res: Response) => {
       }
     } else {
       console.log("history: wrong token");
-      res.status(400).send("The AuthenticationToken is invalid.");
+      res.status(400).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
     }
   } else {
     console.log("history: missing field(s)");

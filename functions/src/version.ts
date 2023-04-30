@@ -32,6 +32,7 @@ const downloadVersion = async (req: Request, res: Response) => {
       try {
         const db = getFirestore(admin.apps[0]);
         const responseInfo: responseJson[] = [];
+        let count = 0;
         await Promise.all(req.body.map(async (obj: { Version: string; Name: string; }) => {
           console.log(`${obj}`);
           const version: string = obj.Version;
@@ -62,7 +63,11 @@ const downloadVersion = async (req: Request, res: Response) => {
           }
           console.log(`version: finished ${version}, ${name}`);
           console.log(`version: final ${responseInfo}`);
+          count += 1;
         }));
+        if (responseInfo.length > count) {
+          res.status(413).send("Too many packages returned.");
+        }
         console.log(`version: ${responseInfo}`);
         res.status(200).send(responseInfo);
       } catch (err) {
@@ -75,7 +80,7 @@ const downloadVersion = async (req: Request, res: Response) => {
     }
   } else {
     console.log("version: Missing field(s)");
-    res.status(404).send("There is missing field(s) in the PackageQuery/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
+    res.status(400).send("There is missing field(s) in the PackageQuery/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
   }
 };
 

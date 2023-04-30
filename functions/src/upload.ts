@@ -4,6 +4,8 @@ import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {firebaseConfig} from "./firebase";
 import {Request, Response} from "express";
 import {validation} from "./validate";
+import {getLicense, getResponsiveness} from "./licAndResp";
+import {getBusFactor} from "./busfactor";
 const crypto = require("crypto");
 const path = require("path");
 const AdmZip = require("adm-zip");
@@ -40,18 +42,19 @@ interface metadataJson{
   name: string,
   version: string,
   id: string,
+  repository: object,
 }
 
-/* interface rateJson {
-  BusFactor: string;
-  Correctness: string;
-  RampUp: string;
-  ResponsiveMaintainer: string;
-  LicenseScore: string;
-  GoodPinningPractice: string;
-  PullRequest: string;
-  NetScore: string;
-}*/
+interface rateJson {
+  BusFactor: number;
+  Correctness: number;
+  RampUp: number;
+  ResponsiveMaintainer: number;
+  LicenseScore: number;
+  GoodPinningPractice: number;
+  PullRequest: number;
+  NetScore: number;
+}
 
 /**
  * Generate ID
@@ -66,9 +69,9 @@ function getID(bytes: number): string {
  * Get metadata from package.json
  * @param {Buffer} decodeBuf
  * @param {string} tempID
- * @return {metadataJson}
+ * @return {[metadataJson, object]}
  */
-async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<metadataJson> {
+async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<[metadataJson, object]> {
   const zipFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/${firebaseConfig.tmp_folder}.zip`;
   console.log(zipFilePath);
   const extractPath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted`;
@@ -92,25 +95,34 @@ async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<metadataJ
   const files = fs.readdirSync(extractPath);
   console.log("List of files in extractPath:", files);
 
-  const newFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/package`;
-  const oldFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/${files[0]}`;
+  let validPath = extractPath;
+  if (!files.includes("package.json")) {
+    const index = files.indexOf("__MACOSX");
+    if (index !== -1) {
+      files.splice(index, 1);
+    }
+    const newFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/package`;
+    const oldFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/${files[0]}`;
 
-  fs.renameSync(oldFilePath, newFilePath);
-
+    fs.renameSync(oldFilePath, newFilePath);
+    validPath = newFilePath;
+  }
+  console.log(`upload: validpath ${validPath}`);
   // Read the package.json file and extract the name and version fields
-  const packageJsonPath = path.join(newFilePath, "package.json");
+  const packageJsonPath = path.join(validPath, "package.json");
   console.log("Reading package.json file:", packageJsonPath);
   const packageJsonContent = fs.readFileSync(packageJsonPath, "utf-8");
   const packageJson = JSON.parse(packageJsonContent);
-  console.log(packageJson);
-  let {name, version, id} = packageJson;
+
+  // console.log(packageJson);
+  let {name, version, id, repository} = packageJson;
   if (id == undefined ) {
     id = tempID;
   }
   // Log the package information
-  const packageInfo: metadataJson = {name, version, id};
+  const packageInfo: metadataJson = {name, version, id, repository};
   console.log("Package information:", packageInfo);
-  return packageInfo;
+  return [packageInfo, packageJson];
 }
 
 /**
@@ -152,7 +164,7 @@ const uploadFile = async (req: Request, res: Response) => {
       try {
         const {Content, URL} = JSON.parse(JSON.stringify(req.body));
         let content = "";
-        let repoUrl = "undefined";
+        let repoUrl: string | unknown = "undefined";
         if (Content) {
           content = Content;
         } else if (URL) {
@@ -167,7 +179,55 @@ const uploadFile = async (req: Request, res: Response) => {
         const tempID = getID(4);
         console.log(`Upload: ID ${tempID}`);
         const decodebuf = Buffer.from(content, "base64");
-        const metadata = await getMetadata(decodebuf, tempID);
+        const contentResult = await getMetadata(decodebuf, tempID);
+        // const packageJson = contentResult[1];
+        const metadata = contentResult[0];
+        if ("url" in metadata["repository"]) {
+          const tempUrl: unknown | string = metadata["repository"].url;
+          if (typeof tempUrl == "string") {
+            repoUrl = tempUrl.replace(".git", "");
+          }
+        }
+        console.log(`upload: ${repoUrl}`);
+
+        let owner = "undefined";
+        let repo = "undefined";
+
+        if (typeof repoUrl == "string") {
+          const repoInfo = repoUrl.split("/");
+          const lastTwoParts = repoInfo.slice(-2);
+
+          owner = lastTwoParts[0];
+          console.log(owner);
+          repo = lastTwoParts[1];
+          console.log(repo);
+        }
+
+
+        const busfactor: number = await getBusFactor(owner, repo);
+        const license: number= await getLicense(owner, repo);
+        const responsiveness: number = await getResponsiveness(owner, repo);
+        // const correctness: number = await (owner, repo);
+        // const rampup: number = await (owner, repo);
+        // const versionPinning: number = await (owner, repo);
+        // const pullrequest: owner = await (owner, repo);
+
+        const rate: rateJson = {
+          "BusFactor": busfactor,
+          "Correctness": 0,
+          "RampUp": 0,
+          "ResponsiveMaintainer": responsiveness,
+          "LicenseScore": license,
+          "GoodPinningPractice": 0,
+          "PullRequest": 0,
+          "NetScore": 0.5,
+        };
+
+        console.log(rate);
+
+        if (rate.NetScore < 0.5) {
+          res.status(424).send("Package is not uploaded due to the disqualified rating.");
+        }
 
         const firebaseApp = initializeApp(firebaseConfig);
         const storage = getStorage(firebaseApp);
@@ -225,7 +285,6 @@ const uploadFile = async (req: Request, res: Response) => {
             });
           }
           // ID
-          const rate = {};
           if (url != "undefined") {
             console.log(`upload: rate = ${rate}`);
           }
@@ -268,4 +327,3 @@ const uploadFile = async (req: Request, res: Response) => {
 };
 
 export {uploadFile};
-// 424: Package is not uploaded due to the disqualified rating.

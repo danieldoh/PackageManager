@@ -89,7 +89,7 @@ const downloadID = async (req, res) => {
         }
         else {
             console.log("download: wrong token");
-            res.status(401).send("The AuthenticationToken is invalid.");
+            res.status(401).send("There is missing field(s) in the PackageID/AuthenticationToken or it is formed improperly, or the AuthenticationToken is invalid.");
         }
     }
     else {

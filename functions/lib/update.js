@@ -72,7 +72,7 @@ const updateFile = async (req, res) => {
                             });
                         }
                         await (0, storage_1.updateMetadata)(storageRef, metadata);
-                        res.status(200).send("Updated the package");
+                        res.status(200).send("Version is updated.");
                     }
                     else {
                         console.log("update: some fields are not matching");
