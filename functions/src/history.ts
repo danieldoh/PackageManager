@@ -20,10 +20,11 @@ interface historyJson {
 const history = async (req: Request, res: Response) => {
   const packageName = req.params["packageName"];
   console.log(`history: packageId ${packageName}`);
-  let token: string | string[] | undefined = req.headers["x-authorization"];
+  const rawHeaders: string[] = req.rawHeaders;
+  const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
+  const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
   console.log(`history: ${token}`);
   if (token && packageName) {
-    token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {

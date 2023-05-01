@@ -26,10 +26,11 @@ async function downloadURL(url, filename) {
 const downloadID = async (req, res) => {
     const packageID = req.params["packageID"];
     console.log(`download: packageId ${packageID}`);
-    let token = req.headers["x-authorization"];
+    const rawHeaders = req.rawHeaders;
+    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
     console.log(`download: ${token}`);
     if (token) {
-        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

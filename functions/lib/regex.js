@@ -5,10 +5,11 @@ const firestore_1 = require("firebase-admin/firestore");
 const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const search = async (req, res) => {
-    let token = req.headers["x-authorization"];
+    const rawHeaders = req.rawHeaders;
+    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
     console.log(`regex: ${token}`);
     if (token) {
-        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

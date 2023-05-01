@@ -155,10 +155,12 @@ async function downloadFile(originUrl: string, filename: string): Promise<string
 const uploadFile = async (req: Request, res: Response) => {
   console.log(`upload(request body): ${req.body}`);
   console.log(`upload(request headers): ${req.headers}`);
-  let token: string | string[] | undefined = req.headers["x-authorization"];
+  const rawHeaders: string[] = req.rawHeaders;
+  const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
+  const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
   console.log(`upload: ${token}`);
   if (token) {
-    token = (token) as string;
+    // token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {
@@ -182,11 +184,16 @@ const uploadFile = async (req: Request, res: Response) => {
         const contentResult = await getMetadata(decodebuf, tempID);
         // const packageJson = contentResult[1];
         const metadata = contentResult[0];
-        if ("url" in metadata["repository"]) {
-          const tempUrl: unknown | string = metadata["repository"].url;
-          if (typeof tempUrl == "string") {
-            repoUrl = tempUrl.replace(".git", "");
+        if (metadata["repository"] != undefined) {
+          if ("url" in metadata["repository"]) {
+            const tempUrl: unknown | string = metadata["repository"].url;
+            if (typeof tempUrl == "string") {
+              repoUrl = tempUrl.replace(".git", "");
+            }
           }
+        }
+        if (repoUrl == "undefined") {
+          res.status(424).send("Package is not uploaded due to the disqualified rating.");
         }
         console.log(`upload: ${repoUrl}`);
 

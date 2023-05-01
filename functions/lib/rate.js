@@ -7,10 +7,11 @@ const admin = require("firebase-admin");
 const rate = async (req, res) => {
     const packageID = req.params["packageID"];
     console.log(`rate: packageID ${packageID}`);
-    let token = req.headers["x-authorization"];
+    const rawHeaders = req.rawHeaders;
+    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
     console.log(`rate: ${token}`);
     if (token && packageID) {
-        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

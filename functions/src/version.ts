@@ -23,10 +23,11 @@ interface responseJson {
 const downloadVersion = async (req: Request, res: Response) => {
   console.log(`version(request body): ${req.body}`);
   console.log(`version(request headers): ${req.headers}`);
-  let token: string | string[] | undefined = req.headers["x-authorization"];
+  const rawHeaders: string[] = req.rawHeaders;
+  const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
+  const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
   console.log(`version: ${token}`);
   if (token) {
-    token = (token) as string;
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
       try {

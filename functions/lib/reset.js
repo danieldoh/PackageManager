@@ -8,10 +8,11 @@ const firebase_1 = require("./firebase");
 const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const reset = async (req, res) => {
-    let token = req.headers["x-authorization"];
+    const rawHeaders = req.rawHeaders;
+    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
     console.log(`token: ${token}`);
     if (token) {
-        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {
