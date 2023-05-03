@@ -28,24 +28,24 @@ function getID(bytes) {
  */
 async function getMetadata(decodeBuf, tempID) {
     const zipFilePath = `/${firebase_1.firebaseConfig.tmp_folder}/${tempID}/${firebase_1.firebaseConfig.tmp_folder}.zip`;
-    console.log(zipFilePath);
+    // console.log(zipFilePath);
     const extractPath = `/${firebase_1.firebaseConfig.tmp_folder}/${tempID}/extracted`;
-    console.log(extractPath);
+    // console.log(extractPath);
     fs.mkdirSync(path.dirname(zipFilePath), { recursive: true });
-    console.log("Zip path created to:", path.dirname(zipFilePath));
+    // console.log("Zip path created to:", path.dirname(zipFilePath));
     // Write the buffer to the zip file
     fs.writeFileSync(zipFilePath, decodeBuf);
-    console.log("Zip file saved to:", zipFilePath);
+    // console.log("Zip file saved to:", zipFilePath);
     // Create the directory where the extracted files will be stored
     fs.mkdirSync(extractPath, { recursive: true });
-    console.log("Extract path created:", extractPath);
+    // console.log("Extract path created:", extractPath);
     // Use adm-zip to extract the contents of the zip file
     const zip = new AdmZip(zipFilePath);
     zip.extractAllTo(extractPath, true);
-    console.log("Zip file extracted to:", extractPath);
+    // console.log("Zip file extracted to:", extractPath);
     // Use fs.readdir() to get a list of files in extractPath
     const files = fs.readdirSync(extractPath);
-    console.log("List of files in extractPath:", files);
+    // console.log("List of files in extractPath:", files);
     let validPath = extractPath;
     if (!files.includes("package.json")) {
         const index = files.indexOf("__MACOSX");
@@ -57,10 +57,10 @@ async function getMetadata(decodeBuf, tempID) {
         fs.renameSync(oldFilePath, newFilePath);
         validPath = newFilePath;
     }
-    console.log(`upload: validpath ${validPath}`);
+    // console.log(`upload: validpath ${validPath}`);
     // Read the package.json file and extract the name and version fields
     const packageJsonPath = path.join(validPath, "package.json");
-    console.log("Reading package.json file:", packageJsonPath);
+    // console.log("Reading package.json file:", packageJsonPath);
     const packageJsonContent = fs.readFileSync(packageJsonPath, "utf-8");
     const packageJson = JSON.parse(packageJsonContent);
     // console.log(packageJson);
@@ -73,6 +73,12 @@ async function getMetadata(decodeBuf, tempID) {
     console.log("Package information:", packageInfo);
     return [packageInfo, packageJson];
 }
+/**
+ * Downlaod file using URL
+ * @param {string} originUrl
+ * @param {string} filename
+ * @return {string}
+ */
 async function downloadFile(originUrl, filename) {
     let url = originUrl + "/archive/main.zip";
     console.log(url);
@@ -93,12 +99,13 @@ async function downloadFile(originUrl, filename) {
     return base64String;
 }
 const updateFile = async (req, res) => {
+    console.log(`Update: body ${JSON.stringify(req.body)}`);
     const packageID = req.params["packageID"];
     console.log(`update: packageID ${packageID}`);
     const rawHeaders = req.rawHeaders;
-    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
     const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-    console.log(`update: ${token}`);
+    // console.log(`update: ${token}`);
     if (token && packageID) {
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
@@ -123,7 +130,10 @@ const updateFile = async (req, res) => {
                         console.log("update: all fields matched");
                         let content = "";
                         let repoUrl = "undefined";
-                        if (data.Content) {
+                        if (data.Content && data.URL) {
+                            res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+                        }
+                        else if (data.Content) {
                             content = data.Content;
                         }
                         else if (data.URL) {
@@ -131,12 +141,14 @@ const updateFile = async (req, res) => {
                             repoUrl = URL;
                             await downloadFile(data.URL, "/tmp/dummy.zip").then((str) => {
                                 content = str;
-                                console.log(content);
                             });
                             console.log("upload: downloaded file from URL");
                         }
+                        else if (data.Content == null && data.URL == null) {
+                            res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+                        }
                         const tempID = getID(4);
-                        console.log(`Upload: ID ${tempID}`);
+                        // console.log(`Upload: ID ${tempID}`);
                         const decodebuf = Buffer.from(content, "base64");
                         const contentResult = await getMetadata(decodebuf, tempID);
                         // const packageJson = contentResult[1];

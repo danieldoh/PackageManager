@@ -21,12 +21,12 @@ interface responseJson {
 }
 
 const downloadVersion = async (req: Request, res: Response) => {
-  console.log(`version(request body): ${req.body}`);
-  console.log(`version(request headers): ${req.headers}`);
+  console.log(`version(request body): ${JSON.stringify(req.body)}`);
+  // console.log(`version(request headers): ${req.headers}`);
   const rawHeaders: string[] = req.rawHeaders;
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
   const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-  console.log(`version: ${token}`);
+  // console.log(`version: ${token}`);
   if (token) {
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
@@ -46,9 +46,9 @@ const downloadVersion = async (req: Request, res: Response) => {
               versionArray.push(version.id);
             }
           });
-          console.log(`version: ${versionArray}`);
+          // console.log(`version: ${versionArray}`);
           const versionPinning = getVersionInRange(versionArray, version);
-          console.log(`version: ${versionPinning} met condition`);
+          // console.log(`version: ${versionPinning} met condition`);
           if (versionPinning.length != 0) {
             const arrLen: number = versionPinning.length;
             const versionRef = db.collection(name).doc(versionPinning[arrLen - 1]);
@@ -62,14 +62,14 @@ const downloadVersion = async (req: Request, res: Response) => {
             };
             responseInfo.push(oneResponse);
           }
-          console.log(`version: finished ${version}, ${name}`);
-          console.log(`version: final ${responseInfo}`);
+          // console.log(`version: finished ${version}, ${name}`);
+          // console.log(`version: final ${responseInfo}`);
           count += 1;
         }));
         if (responseInfo.length > count) {
           res.status(413).send("Too many packages returned.");
         }
-        console.log(`version: ${responseInfo}`);
+        // console.log(`version: ${responseInfo}`);
         res.status(200).send(responseInfo);
       } catch (err) {
         console.error(err);

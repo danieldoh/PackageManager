@@ -29,12 +29,13 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const cors = require("cors")({ origin: true });
 const auth = (req, res) => {
+    console.log(`Auth: ${JSON.stringify(req.body)}`);
     const info = req.body;
-    console.log(`${info}`);
+    // console.log(`${info}`);
     const user = info["User"];
     const secret = info["Secret"];
     const username = user["name"];
-    console.log(username);
+    // console.log(username);
     const isAdmin = user["isAdmin"];
     const password = secret["password"];
     try {
@@ -101,6 +102,15 @@ async function checkUsername(username, password, Admin) {
             IdToken: idtoken,
             Admin: Admin,
         });
+        if (Admin == true) {
+            const users = db.collection("Default Admin");
+            await users.doc(idtoken).set({
+                Username: username,
+                Password: password,
+                IdToken: idtoken,
+                Admin: "true",
+            });
+        }
         return [true, idtoken];
     }
     else {

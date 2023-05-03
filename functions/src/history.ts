@@ -23,7 +23,7 @@ const history = async (req: Request, res: Response) => {
   const rawHeaders: string[] = req.rawHeaders;
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
   const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-  console.log(`history: ${token}`);
+  // console.log(`history: ${token}`);
   if (token && packageName) {
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
@@ -32,7 +32,7 @@ const history = async (req: Request, res: Response) => {
         const packagesRef = db.collection(packageName).doc("history");
         const doc = await packagesRef.get();
         if (doc.exists) {
-          console.log("history: found the packageName in firestore");
+          // console.log("history: found the packageName in firestore");
           const docData: DocumentData | undefined = doc.data();
           const allHistory: historyJson[] = docData?.["history"];
           res.status(200).send(allHistory);

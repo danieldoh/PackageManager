@@ -12,7 +12,7 @@ const deleteAll = async (req: Request, res: Response) => {
   const rawHeaders: string[] = req.rawHeaders;
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
   const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-  console.log(`DeleteAll: ${token}`);
+  // console.log(`DeleteAll: ${token}`);
   if (token && packageName) {
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {
@@ -37,7 +37,7 @@ const deleteAll = async (req: Request, res: Response) => {
           doc.ref.delete();
         });
         console.log("DeleteAll: deleted from firestore");
-        console.log(idArray);
+        // console.log(idArray);
         for (const id of idArray) {
           const tempIdRef = db.collection("ID").doc(id);
           await tempIdRef.delete();

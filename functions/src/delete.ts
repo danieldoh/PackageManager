@@ -26,7 +26,7 @@ const fileDelete = async (req: Request, res: Response) => {
   const rawHeaders: string[] = req.rawHeaders;
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
   const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-  console.log(`Delete: ${token}`);
+  // console.log(`Delete: ${token}`);
   if (token && packageID) {
     const authentication: [boolean, string] = await validation(token);
     if (authentication[0]) {

@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import express from "express";
+// import {Request, Response, NextFunction} from "express";
 import {uploadFile} from "./upload";
 import {fileDelete} from "./delete";
 import {updateFile} from "./update";
@@ -11,12 +12,16 @@ import {reset} from "./reset";
 import {search} from "./regex";
 import {downloadVersion} from "./version";
 import {rate} from "./rate";
+// import path from 'path';
+// const fs = require("fs");
+const morgan = require("morgan");
 
 const api = express();
 
+api.use(morgan("combined"));
 
 api.post("/packages", downloadVersion); // package"s", get the packages
-api.delete("/package/reset", reset); // Reset the registry
+api.delete("/reset", reset); // Reset the registry
 api.get("/package/:packageID", downloadID); // return this package
 api.put("/package/:packageID", updateFile); // update the following package ID
 api.delete("/package/:packageID", fileDelete);

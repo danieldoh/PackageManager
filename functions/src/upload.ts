@@ -72,57 +72,67 @@ function getID(bytes: number): string {
  * @return {[metadataJson, object]}
  */
 async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<[metadataJson, object]> {
-  const zipFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/${firebaseConfig.tmp_folder}.zip`;
-  console.log(zipFilePath);
-  const extractPath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted`;
-  console.log(extractPath);
-  fs.mkdirSync(path.dirname(zipFilePath), {recursive: true});
-  console.log("Zip path created to:", path.dirname(zipFilePath));
-  // Write the buffer to the zip file
-  fs.writeFileSync(zipFilePath, decodeBuf);
-  console.log("Zip file saved to:", zipFilePath);
+  const errorMeta: metadataJson = {
+    name: "undefined",
+    version: "undefined",
+    id: "undefined",
+    repository: {},
+  };
+  try {
+    const zipFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/${firebaseConfig.tmp_folder}.zip`;
+    // console.log(zipFilePath);
+    const extractPath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted`;
+    // console.log(extractPath);
+    fs.mkdirSync(path.dirname(zipFilePath), {recursive: true});
+    // console.log("Zip path created to:", path.dirname(zipFilePath));
+    // Write the buffer to the zip file
+    fs.writeFileSync(zipFilePath, decodeBuf);
+    // console.log("Zip file saved to:", zipFilePath);
 
-  // Create the directory where the extracted files will be stored
-  fs.mkdirSync(extractPath, {recursive: true});
-  console.log("Extract path created:", extractPath);
+    // Create the directory where the extracted files will be stored
+    fs.mkdirSync(extractPath, {recursive: true});
+    // console.log("Extract path created:", extractPath);
 
-  // Use adm-zip to extract the contents of the zip file
-  const zip = new AdmZip(zipFilePath);
-  zip.extractAllTo(extractPath, true);
-  console.log("Zip file extracted to:", extractPath);
+    // Use adm-zip to extract the contents of the zip file
+    const zip = new AdmZip(zipFilePath);
+    zip.extractAllTo(extractPath, true);
+    // console.log("Zip file extracted to:", extractPath);
 
-  // Use fs.readdir() to get a list of files in extractPath
-  const files = fs.readdirSync(extractPath);
-  console.log("List of files in extractPath:", files);
+    // Use fs.readdir() to get a list of files in extractPath
+    const files = fs.readdirSync(extractPath);
+    // console.log("List of files in extractPath:", files);
 
-  let validPath = extractPath;
-  if (!files.includes("package.json")) {
-    const index = files.indexOf("__MACOSX");
-    if (index !== -1) {
-      files.splice(index, 1);
+    let validPath = extractPath;
+    if (!files.includes("package.json")) {
+      const index = files.indexOf("__MACOSX");
+      if (index !== -1) {
+        files.splice(index, 1);
+      }
+      const newFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/package`;
+      const oldFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/${files[0]}`;
+
+      fs.renameSync(oldFilePath, newFilePath);
+      validPath = newFilePath;
     }
-    const newFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/package`;
-    const oldFilePath = `/${firebaseConfig.tmp_folder}/${tempID}/extracted/${files[0]}`;
+    // console.log(`upload: validpath ${validPath}`);
+    // Read the package.json file and extract the name and version fields
+    const packageJsonPath = path.join(validPath, "package.json");
+    // console.log("Reading package.json file:", packageJsonPath);
+    const packageJsonContent = fs.readFileSync(packageJsonPath, "utf-8");
+    const packageJson = JSON.parse(packageJsonContent);
 
-    fs.renameSync(oldFilePath, newFilePath);
-    validPath = newFilePath;
+    // console.log(packageJson);
+    let {name, version, id, repository} = packageJson;
+    if (id == undefined ) {
+      id = tempID;
+    }
+    // Log the package information
+    const packageInfo: metadataJson = {name, version, id, repository};
+    // console.log("Package information:", packageInfo);
+    return [packageInfo, packageJson];
+  } catch (error) {
+    return [errorMeta, {}];
   }
-  console.log(`upload: validpath ${validPath}`);
-  // Read the package.json file and extract the name and version fields
-  const packageJsonPath = path.join(validPath, "package.json");
-  console.log("Reading package.json file:", packageJsonPath);
-  const packageJsonContent = fs.readFileSync(packageJsonPath, "utf-8");
-  const packageJson = JSON.parse(packageJsonContent);
-
-  // console.log(packageJson);
-  let {name, version, id, repository} = packageJson;
-  if (id == undefined ) {
-    id = tempID;
-  }
-  // Log the package information
-  const packageInfo: metadataJson = {name, version, id, repository};
-  console.log("Package information:", packageInfo);
-  return [packageInfo, packageJson];
 }
 
 /**
@@ -133,13 +143,13 @@ async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<[metadata
  */
 async function downloadFile(originUrl: string, filename: string): Promise<string> {
   let url = originUrl + "/archive/main.zip";
-  console.log(url);
+  // console.log(url);
   let response = await fetch(url);
 
   // check if the request was successful
   if (response.status != 200) {
     url = originUrl + "/archive/master.zip";
-    console.log(url);
+    // console.log(url);
   }
   response = await fetch(url);
   if (response.status != 200) {
@@ -153,9 +163,10 @@ async function downloadFile(originUrl: string, filename: string): Promise<string
 }
 
 const uploadFile = async (req: Request, res: Response) => {
-  console.log(`upload(request body): ${req.body}`);
-  console.log(`upload(request headers): ${req.headers}`);
+  console.log(`upload(request body): ${JSON.stringify(req.body)}`);
+  // const rawBody: string [] = req.body;
   const rawHeaders: string[] = req.rawHeaders;
+  console.log(`upload: headers ${rawHeaders}`);
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
   const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
   console.log(`upload: ${token}`);
@@ -167,24 +178,29 @@ const uploadFile = async (req: Request, res: Response) => {
         const {Content, URL} = JSON.parse(JSON.stringify(req.body));
         let content = "";
         let repoUrl: string | unknown = "undefined";
-        if (Content) {
+        if (Content && URL) {
+          res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+        } else if (Content) {
           content = Content;
         } else if (URL) {
           console.log(URL);
           repoUrl = URL;
           await downloadFile(URL, "/tmp/dummy.zip").then((str) => {
             content = str;
-            console.log(content);
           });
-          console.log("upload: downloaded file from URL");
+          // console.log("upload: downloaded file from URL");
+        } else if (Content == null && URL == null) {
+          res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
         }
         const tempID = getID(4);
-        console.log(`Upload: ID ${tempID}`);
+        // console.log(`Upload: ID ${tempID}`);
         const decodebuf = Buffer.from(content, "base64");
         const contentResult = await getMetadata(decodebuf, tempID);
         // const packageJson = contentResult[1];
         const metadata = contentResult[0];
-        if (metadata["repository"] != undefined) {
+        if (metadata["name"] == "undefined") {
+          res.status(424).send("Package is not uploaded due to the disqualified rating.");
+        } else if (metadata["repository"] != undefined) {
           if ("url" in metadata["repository"]) {
             const tempUrl: unknown | string = metadata["repository"].url;
             if (typeof tempUrl == "string") {
@@ -230,7 +246,7 @@ const uploadFile = async (req: Request, res: Response) => {
           "NetScore": 0.5,
         };
 
-        console.log(rate);
+        // console.log(rate);
 
         if (rate.NetScore < 0.5) {
           res.status(424).send("Package is not uploaded due to the disqualified rating.");
@@ -263,6 +279,7 @@ const uploadFile = async (req: Request, res: Response) => {
           const storageFolder = db.collection("storage");
           await storageFolder.doc(metadata["name"]).set({
             Folder: metadata["name"],
+            Version: metadata["version"],
           });
           console.log("upload: created the storage folder name document");
           // History
@@ -318,18 +335,18 @@ const uploadFile = async (req: Request, res: Response) => {
             Content: content,
           },
         };
-        res.status(200).send(responseInfo);
+        res.status(201).send(responseInfo);
       } catch (error) {
         console.error(error);
-        res.status(500).send(error);
+        res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
       }
     } else {
       console.log("upload: wrong token");
-      res.status(400).send("The AuthenticationToken is invalid.");
+      res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
     }
   } else {
     console.log("upload: missing field(s)");
-    res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set).");
+    res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
   }
 };
 

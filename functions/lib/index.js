@@ -28,6 +28,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const functions = __importStar(require("firebase-functions"));
 const express_1 = __importDefault(require("express"));
+// import {Request, Response, NextFunction} from "express";
 const upload_1 = require("./upload");
 const delete_1 = require("./delete");
 const update_1 = require("./update");
@@ -39,9 +40,13 @@ const reset_1 = require("./reset");
 const regex_1 = require("./regex");
 const version_1 = require("./version");
 const rate_1 = require("./rate");
+// import path from 'path';
+// const fs = require("fs");
+const morgan = require("morgan");
 const api = (0, express_1.default)();
+api.use(morgan("combined"));
 api.post("/packages", version_1.downloadVersion); // package"s", get the packages
-api.delete("/package/reset", reset_1.reset); // Reset the registry
+api.delete("/reset", reset_1.reset); // Reset the registry
 api.get("/package/:packageID", download_1.downloadID); // return this package
 api.put("/package/:packageID", update_1.updateFile); // update the following package ID
 api.delete("/package/:packageID", delete_1.fileDelete);

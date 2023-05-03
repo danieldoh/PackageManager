@@ -38,12 +38,12 @@ function getVersionInRange(versionArray, versionRange) {
     return versionArray.filter((version) => semver.satisfies(version, versionRange));
 }
 const downloadVersion = async (req, res) => {
-    console.log(`version(request body): ${req.body}`);
-    console.log(`version(request headers): ${req.headers}`);
+    console.log(`version(request body): ${JSON.stringify(req.body)}`);
+    // console.log(`version(request headers): ${req.headers}`);
     const rawHeaders = req.rawHeaders;
-    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
     const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-    console.log(`version: ${token}`);
+    // console.log(`version: ${token}`);
     if (token) {
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
@@ -63,9 +63,9 @@ const downloadVersion = async (req, res) => {
                             versionArray.push(version.id);
                         }
                     });
-                    console.log(`version: ${versionArray}`);
+                    // console.log(`version: ${versionArray}`);
                     const versionPinning = getVersionInRange(versionArray, version);
-                    console.log(`version: ${versionPinning} met condition`);
+                    // console.log(`version: ${versionPinning} met condition`);
                     if (versionPinning.length != 0) {
                         const arrLen = versionPinning.length;
                         const versionRef = db.collection(name).doc(versionPinning[arrLen - 1]);
@@ -79,14 +79,14 @@ const downloadVersion = async (req, res) => {
                         };
                         responseInfo.push(oneResponse);
                     }
-                    console.log(`version: finished ${version}, ${name}`);
-                    console.log(`version: final ${responseInfo}`);
+                    // console.log(`version: finished ${version}, ${name}`);
+                    // console.log(`version: final ${responseInfo}`);
                     count += 1;
                 }));
                 if (responseInfo.length > count) {
                     res.status(413).send("Too many packages returned.");
                 }
-                console.log(`version: ${responseInfo}`);
+                // console.log(`version: ${responseInfo}`);
                 res.status(200).send(responseInfo);
             }
             catch (err) {

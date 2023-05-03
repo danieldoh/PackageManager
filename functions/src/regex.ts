@@ -9,6 +9,7 @@ interface packageJson {
 }
 
 const search = async (req: Request, res: Response) => {
+  console.log(`regex: body ${JSON.stringify(req.body)}`);
   const rawHeaders: string[] = req.rawHeaders;
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
   const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
@@ -19,7 +20,7 @@ const search = async (req: Request, res: Response) => {
       try {
         const regEx: string = req.body.RegEx;
         const regexObj = new RegExp(regEx);
-        console.log(`regex: regex = ${regEx}`);
+        // console.log(`regex: regex = ${regEx}`);
         const db = getFirestore(admin.apps[0]);
         const packagesListRef = db.collection("storage");
         const docs = await packagesListRef.get();
@@ -27,10 +28,11 @@ const search = async (req: Request, res: Response) => {
         docs.forEach((doc) => {
           const docData: DocumentData | undefined = doc.data();
           const packageName: string = docData["Folder"];
+          const packageVersion: string = docData["Version"];
           const found: boolean = regexObj.test(packageName);
           if (found) {
             const packageInfo: packageJson = {
-              Version: "Not Yet",
+              Version: packageVersion,
               Name: packageName,
             };
             nameArray.push(packageInfo);

@@ -27,9 +27,9 @@ const downloadID = async (req, res) => {
     const packageID = req.params["packageID"];
     console.log(`download: packageId ${packageID}`);
     const rawHeaders = req.rawHeaders;
-    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
     const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
-    console.log(`download: ${token}`);
+    // console.log(`download: ${token}`);
     if (token) {
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
@@ -40,7 +40,7 @@ const downloadID = async (req, res) => {
                 if (idInfo.exists) {
                     console.log("download: found the package");
                     const idData = idInfo.data();
-                    console.log(idData);
+                    // console.log(idData);
                     const packageName = idData === null || idData === void 0 ? void 0 : idData["Name"];
                     const packageVersion = idData === null || idData === void 0 ? void 0 : idData["Version"];
                     const url = idData === null || idData === void 0 ? void 0 : idData["Download_URL"];
@@ -48,7 +48,7 @@ const downloadID = async (req, res) => {
                     let content = "";
                     await downloadURL(url, "/tmp/dummy.zip").then((str) => {
                         content = str;
-                        console.log(content);
+                        // console.log(content);
                     });
                     console.log("download: downloaded");
                     if (repoUrl == "undefined") {

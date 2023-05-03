@@ -15,12 +15,13 @@ interface userJson {
 }
 
 const auth = (req: Request, res: Response) => {
+  console.log(`Auth: ${JSON.stringify(req.body)}`);
   const info: userJson = req.body;
-  console.log(`${info}`);
+  // console.log(`${info}`);
   const user = info["User"];
   const secret = info["Secret"];
   const username = user["name"];
-  console.log(username);
+  // console.log(username);
   const isAdmin = user["isAdmin"];
   const password = secret["password"];
   try {
@@ -92,6 +93,15 @@ async function checkUsername(
       IdToken: idtoken,
       Admin: Admin,
     });
+    if (Admin == true) {
+      const users = db.collection("Default Admin");
+      await users.doc(idtoken).set({
+        Username: username,
+        Password: password,
+        IdToken: idtoken,
+        Admin: "true",
+      });
+    }
     return [true, idtoken];
   } else {
     return [false, "Failed"];

@@ -5,8 +5,9 @@ const firestore_1 = require("firebase-admin/firestore");
 const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const search = async (req, res) => {
+    console.log(`regex: body ${JSON.stringify(req.body)}`);
     const rawHeaders = req.rawHeaders;
-    const authHeaderIndex = rawHeaders.indexOf('X-Authorization');
+    const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
     const token = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
     console.log(`regex: ${token}`);
     if (token) {
@@ -15,7 +16,7 @@ const search = async (req, res) => {
             try {
                 const regEx = req.body.RegEx;
                 const regexObj = new RegExp(regEx);
-                console.log(`regex: regex = ${regEx}`);
+                // console.log(`regex: regex = ${regEx}`);
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
                 const packagesListRef = db.collection("storage");
                 const docs = await packagesListRef.get();
@@ -23,10 +24,11 @@ const search = async (req, res) => {
                 docs.forEach((doc) => {
                     const docData = doc.data();
                     const packageName = docData["Folder"];
+                    const packageVersion = docData["Version"];
                     const found = regexObj.test(packageName);
                     if (found) {
                         const packageInfo = {
-                            Version: "Not Yet",
+                            Version: packageVersion,
                             Name: packageName,
                         };
                         nameArray.push(packageInfo);
