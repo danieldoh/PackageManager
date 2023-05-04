@@ -51,7 +51,25 @@ const downloadVersion = async (req, res) => {
                 const db = (0, firestore_1.getFirestore)(admin.apps[0]);
                 const responseInfo = [];
                 let count = 0;
-                await Promise.all(req.body.map(async (obj) => {
+                console.log(req.body[0]["Name"]);
+                let reqInfo = [];
+                if (req.body[0]["Name"] == "*") {
+                    const storageFolder = db.collection("storage");
+                    const folderList = await storageFolder.get();
+                    folderList.forEach((folder) => {
+                        let info = {
+                            Version: req.body[0]["Version"],
+                            Name: folder.id
+                        };
+                        console.log(info);
+                        console.log(folder.id);
+                        reqInfo.push(info);
+                    });
+                }
+                else {
+                    reqInfo = req.body;
+                }
+                await Promise.all(reqInfo.map(async (obj) => {
                     console.log(`${obj}`);
                     const version = obj.Version;
                     const name = obj.Name;

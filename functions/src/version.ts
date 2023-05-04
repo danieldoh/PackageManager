@@ -20,6 +20,11 @@ interface responseJson {
   ID: string;
 }
 
+interface reqInfoJson {
+  Version: string;
+  Name: string;
+}
+
 const downloadVersion = async (req: Request, res: Response) => {
   console.log(`version(request body): ${JSON.stringify(req.body)}`);
   // console.log(`version(request headers): ${req.headers}`);
@@ -34,7 +39,24 @@ const downloadVersion = async (req: Request, res: Response) => {
         const db = getFirestore(admin.apps[0]);
         const responseInfo: responseJson[] = [];
         let count = 0;
-        await Promise.all(req.body.map(async (obj: { Version: string; Name: string; }) => {
+        console.log(req.body[0]["Name"]);
+        let reqInfo: reqInfoJson[] = [];
+        if (req.body[0]["Name"] == "*") {
+          const storageFolder = db.collection("storage");
+          const folderList = await storageFolder.get();
+          folderList.forEach((folder) => {
+            let info = {
+              Version: req.body[0]["Version"],
+              Name: folder.id
+            }
+            console.log(info);
+            console.log(folder.id);
+            reqInfo.push(info);
+          });
+        } else {
+          reqInfo = req.body;
+        }
+        await Promise.all(reqInfo.map(async (obj: { Version: string; Name: string; }) => {
           console.log(`${obj}`);
           const version: string = obj.Version;
           const name: string = obj.Name;

@@ -8,6 +8,7 @@ const firebase_1 = require("./firebase");
 const validate_1 = require("./validate");
 const licAndResp_1 = require("./licAndResp");
 const busfactor_1 = require("./busfactor");
+const versionPinning_1 = require("./versionPinning");
 const crypto = require("crypto");
 const path = require("path");
 const AdmZip = require("adm-zip");
@@ -180,7 +181,7 @@ const uploadFile = async (req, res) => {
                 const responsiveness = await (0, licAndResp_1.getResponsiveness)(owner, repo);
                 // const correctness: number = await (owner, repo);
                 // const rampup: number = await (owner, repo);
-                // const versionPinning: number = await (owner, repo);
+                const versionPinning = await (0, versionPinning_1.getVP)(owner, repo);
                 // const pullrequest: owner = await (owner, repo);
                 const rate = {
                     "BusFactor": busfactor,
@@ -188,11 +189,11 @@ const uploadFile = async (req, res) => {
                     "RampUp": 0,
                     "ResponsiveMaintainer": responsiveness,
                     "LicenseScore": license,
-                    "GoodPinningPractice": 0,
+                    "GoodPinningPractice": versionPinning,
                     "PullRequest": 0,
                     "NetScore": 0.5,
                 };
-                // console.log(rate);
+                console.log(rate);
                 if (rate.NetScore < 0.5) {
                     res.status(424).send("Package is not uploaded due to the disqualified rating.");
                 }

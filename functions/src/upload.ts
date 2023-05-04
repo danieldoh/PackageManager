@@ -6,6 +6,7 @@ import {Request, Response} from "express";
 import {validation} from "./validate";
 import {getLicense, getResponsiveness} from "./licAndResp";
 import {getBusFactor} from "./busfactor";
+import {getVP} from "./versionPinning";
 const crypto = require("crypto");
 const path = require("path");
 const AdmZip = require("adm-zip");
@@ -232,7 +233,7 @@ const uploadFile = async (req: Request, res: Response) => {
         const responsiveness: number = await getResponsiveness(owner, repo);
         // const correctness: number = await (owner, repo);
         // const rampup: number = await (owner, repo);
-        // const versionPinning: number = await (owner, repo);
+        const versionPinning: number = await getVP(owner, repo);
         // const pullrequest: owner = await (owner, repo);
 
         const rate: rateJson = {
@@ -241,12 +242,12 @@ const uploadFile = async (req: Request, res: Response) => {
           "RampUp": 0,
           "ResponsiveMaintainer": responsiveness,
           "LicenseScore": license,
-          "GoodPinningPractice": 0,
+          "GoodPinningPractice": versionPinning,
           "PullRequest": 0,
           "NetScore": 0.5,
         };
 
-        // console.log(rate);
+        console.log(rate);
 
         if (rate.NetScore < 0.5) {
           res.status(424).send("Package is not uploaded due to the disqualified rating.");
