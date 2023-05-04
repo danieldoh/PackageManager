@@ -46,7 +46,7 @@ export async function getVP(owner: string, repo: string): Promise<number> {
     let VPscore = 0;
     if ("content" in data) {
       const packagejson: Record<string, string> = JSON.parse(
-        Buffer.from(data.content || '', "base64").toString()
+        Buffer.from(data.content || "", "base64").toString()
       );
       VPscore = getVPscore(packagejson);
     }
@@ -60,4 +60,4 @@ export async function getVP(owner: string, repo: string): Promise<number> {
 }
 
 // example usage
-getVP('octokit', 'rest.js').then((score) => console.log(score));
+getVP("octokit", "rest.js").then((score) => console.log(score));

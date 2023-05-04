@@ -45,10 +45,10 @@ const downloadVersion = async (req: Request, res: Response) => {
           const storageFolder = db.collection("storage");
           const folderList = await storageFolder.get();
           folderList.forEach((folder) => {
-            let info = {
+            const info = {
               Version: req.body[0]["Version"],
-              Name: folder.id
-            }
+              Name: folder.id,
+            };
             console.log(info);
             console.log(folder.id);
             reqInfo.push(info);
