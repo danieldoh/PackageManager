@@ -2,7 +2,7 @@
   "name": "functions",
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
-    "fix": "./node_modules/.bin/eslint --fix src/*.ts",
+    "fix": "./node_modules/.bin/eslint --fix src/*.ts test/*.ts",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions,firestore,storage",
@@ -41,6 +41,7 @@
     "@types/chai": "^4.3.4",
     "@types/cors": "^2.8.13",
     "@types/fs-extra": "^11.0.1",
+    "@types/jest": "^29.5.1",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.16.2",
     "@types/supertest": "^2.0.12",
