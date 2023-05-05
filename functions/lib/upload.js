@@ -27,12 +27,11 @@ async function downloadFile(url, filename) {
     console.log("File downloaded successfully");
     return base64String;
 }
+////##################### UPLOAD FILE #################
 const uploadFile = async (req, res) => {
     let token = req.headers["x-authorization"];
-    console.log(token);
     if (token) {
         token = (token);
-        console.log(token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

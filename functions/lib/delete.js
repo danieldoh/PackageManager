@@ -9,8 +9,9 @@ const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const fileDelete = async (req, res) => {
     const packageID = req.params["packageID"];
-    const token = req.headers.authorization;
+    let token = req.headers["x-authorization"];
     if (token && packageID) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

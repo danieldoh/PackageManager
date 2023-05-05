@@ -9,8 +9,9 @@ const validate_1 = require("./validate");
 const admin = require("firebase-admin");
 const search = async (req, res) => {
     const packageName = req.params["packageName"];
-    const token = req.headers.authorization;
+    let token = req.headers["x-authorization"];
     if (token && packageName) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

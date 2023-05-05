@@ -10,8 +10,9 @@ const admin = require("firebase-admin");
 // and loop over the list of collections and check the versions by version pinning?
 const downloadFile = async (req, res) => {
     const packageID = req.params["packageID"];
-    const token = req.headers.authorization;
+    let token = req.headers["x-authorization"];
     if (token) {
+        token = (token);
         const authentication = await (0, validate_1.validation)(token);
         if (authentication[0]) {
             try {

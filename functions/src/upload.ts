@@ -52,7 +52,7 @@ async function downloadFile(url: string, filename: string): Promise<string> {
   console.log("File downloaded successfully");
   return base64String;
 }
-
+////##################### UPLOAD FILE #################
 const uploadFile = async (req: Request, res: Response) => {
   let token: string | string[] | undefined = req.headers["x-authorization"];
   if (token) {
