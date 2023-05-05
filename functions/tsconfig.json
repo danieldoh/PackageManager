@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["jest"],
     "module": "CommonJS",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
@@ -7,10 +8,9 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
+    "lib": ["dom"],
     "esModuleInterop": true
   },
   "compileOnSave": true,
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
