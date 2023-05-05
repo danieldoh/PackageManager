@@ -1,17 +1,17 @@
-import express from 'express';
-import 'firebase/firestore';
-import request from 'supertest';
-import { fileDelete } from '../src/delete';
-//const {firestore} = require("../src/firebaseAdmin");
-const { firestore } = require('firebase-admin');
-jest.mock('../src/firebase');
+import express from "express";
+import "firebase/firestore";
+import request from "supertest";
+import {fileDelete} from "../src/delete";
+// const {firestore} = require("../src/firebaseAdmin");
+const {firestore} = require("firebase-admin");
+jest.mock("../src/firebase");
 
-describe('fileDelete', () => {
-  it('(1) should delete a package file and its corresponding document', async () => {
+describe("fileDelete", () => {
+  it("(1) should delete a package file and its corresponding document", async () => {
     const metadata = {
-      Name: 'test-package',
-      Version: '1.0.0',
-      ID: 'test-package-1.0.0',
+      Name: "test-package",
+      Version: "1.0.0",
+      ID: "test-package-1.0.0",
     };
     const db = {
       collection: jest.fn().mockReturnThis(),
@@ -29,111 +29,111 @@ describe('fileDelete', () => {
 
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
 
     const res = await request(app)
-      .delete('/package/test-package-1.0.0')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0")
+      .send({metadata});
 
     expect(res.status).toEqual(200);
     expect(deleteObject).toHaveBeenCalledTimes(1);
-    expect(ref).toHaveBeenCalledWith('test-package/test-package-1.0.0.bin');
-    expect(db.collection).toHaveBeenCalledWith('test-package');
-    expect(db.doc).toHaveBeenCalledWith('1.0.0');
+    expect(ref).toHaveBeenCalledWith("test-package/test-package-1.0.0.bin");
+    expect(db.collection).toHaveBeenCalledWith("test-package");
+    expect(db.doc).toHaveBeenCalledWith("1.0.0");
     expect(db.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('(2) should return 404 if the package does not exist', async () => {
+  it("(2) should return 404 if the package does not exist", async () => {
     const metadata = {
-      Name: 'non-existent-package',
-      Version: '1.0.0',
-      ID: 'non-existent-package-1.0.0',
+      Name: "non-existent-package",
+      Version: "1.0.0",
+      ID: "non-existent-package-1.0.0",
     };
     const db = {
       collection: jest.fn().mockReturnThis(),
       doc: jest.fn().mockReturnThis(),
       delete: jest
         .fn()
-        .mockRejectedValueOnce(new Error('Document does not exist.')),
+        .mockRejectedValueOnce(new Error("Document does not exist.")),
     };
     firestore.mockReturnValueOnce(db);
 
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
 
     const res = await request(app)
-      .delete('/package/non-existent-package-1.0.0')
-      .send({ metadata });
+      .delete("/package/non-existent-package-1.0.0")
+      .send({metadata});
 
     expect(res.status).toEqual(404);
   });
 
-  it('(3) should return 400 if the authentication token is missing or invalid', async () => {
+  it("(3) should return 400 if the authentication token is missing or invalid", async () => {
     const metadata = {
-      Name: 'test-package',
-      Version: '1.0.0',
-      ID: 'test-package-1.0.0',
+      Name: "test-package",
+      Version: "1.0.0",
+      ID: "test-package-1.0.0",
     };
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
 
     // Missing token
     let res = await request(app)
-      .delete('/package/test-package-1.0.0')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0")
+      .send({metadata});
     expect(res.status).toEqual(400);
 
     // Invalid token
     res = await request(app)
-      .delete('/package/test-package-1.0.0')
-      .set('x-authorization', 'invalid-token')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0")
+      .set("x-authorization", "invalid-token")
+      .send({metadata});
     expect(res.status).toEqual(400);
   }, 10000);
 
-  it('(4) should return 400 if the package ID is missing or malformed', async () => {
+  it("(4) should return 400 if the package ID is missing or malformed", async () => {
     const metadata = {
-      Name: 'test-package',
-      Version: '1.0.0',
-      ID: 'test-package-1.0.0',
+      Name: "test-package",
+      Version: "1.0.0",
+      ID: "test-package-1.0.0",
     };
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
 
     // Test with missing package ID
-    let res = await request(app).delete('/package/').send({ metadata });
+    let res = await request(app).delete("/package/").send({metadata});
     expect(res.status).toEqual(400);
-    expect(res.body).toEqual({ message: 'Missing package ID' });
+    expect(res.body).toEqual({message: "Missing package ID"});
 
     // Test with malformed package ID
     res = await request(app)
-      .delete('/package/test-package-1.0.0.bin')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0.bin")
+      .send({metadata});
     expect(res.status).toEqual(400);
-    expect(res.body).toEqual({ message: 'Malformed package ID' });
+    expect(res.body).toEqual({message: "Malformed package ID"});
   });
 
-  it('(5) should return 404 if package does not exist', async () => {
+  it("(5) should return 404 if package does not exist", async () => {
     const metadata = {
-      Name: 'test-package',
-      Version: '1.0.0',
-      ID: 'test-package-1.0.0',
+      Name: "test-package",
+      Version: "1.0.0",
+      ID: "test-package-1.0.0",
     };
     const db = {
       collection: jest.fn().mockReturnThis(),
       doc: jest.fn().mockReturnThis(),
       delete: jest
         .fn()
-        .mockRejectedValueOnce(new Error('Document does not exist')),
+        .mockRejectedValueOnce(new Error("Document does not exist")),
     };
     firestore.mockReturnValueOnce(db);
 
     const deleteObject = jest
       .fn()
-      .mockRejectedValueOnce(new Error('Object does not exist'));
+      .mockRejectedValueOnce(new Error("Object does not exist"));
     const storageRef = {
       child: jest.fn().mockReturnThis(),
       delete: deleteObject,
@@ -142,58 +142,58 @@ describe('fileDelete', () => {
 
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
 
     const res = await request(app)
-      .delete('/package/test-package-1.0.0')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0")
+      .send({metadata});
 
     expect(res.status).toEqual(404);
     expect(deleteObject).toHaveBeenCalledTimes(1);
-    expect(ref).toHaveBeenCalledWith('test-package/test-package-1.0.0.bin');
-    expect(db.collection).toHaveBeenCalledWith('test-package');
-    expect(db.doc).toHaveBeenCalledWith('1.0.0');
+    expect(ref).toHaveBeenCalledWith("test-package/test-package-1.0.0.bin");
+    expect(db.collection).toHaveBeenCalledWith("test-package");
+    expect(db.doc).toHaveBeenCalledWith("1.0.0");
     expect(db.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('(6) should return 400 if authentication token is missing or invalid', async () => {
+  it("(6) should return 400 if authentication token is missing or invalid", async () => {
     const metadata = {
-      Name: 'test-package',
-      Version: '1.0.0',
-      ID: 'test-package-1.0.0',
+      Name: "test-package",
+      Version: "1.0.0",
+      ID: "test-package-1.0.0",
     };
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
 
     const res1 = await request(app)
-      .delete('/package/test-package-1.0.0')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0")
+      .send({metadata});
 
     expect(res1.status).toEqual(400);
 
     const res2 = await request(app)
-      .delete('/package/test-package-1.0.0')
-      .set('x-authorization', 'invalid-token')
-      .send({ metadata });
+      .delete("/package/test-package-1.0.0")
+      .set("x-authorization", "invalid-token")
+      .send({metadata});
 
     expect(res2.status).toEqual(400);
   }, 10000);
 
-  it('(7) should return 404 if packageID is missing', async () => {
+  it("(7) should return 404 if packageID is missing", async () => {
     const app = express();
     app.use(express.json());
-    app.delete('/package/:packageID', fileDelete);
+    app.delete("/package/:packageID", fileDelete);
     const metadata = {
-      Name: 'test-package',
-      Version: '1.0.0',
-      ID: 'test-package-1.0.0',
+      Name: "test-package",
+      Version: "1.0.0",
+      ID: "test-package-1.0.0",
     };
 
     const res = await request(app)
-      .delete('/package/')
-      .set('x-authorization', 'valid-token')
-      .send({ metadata });
+      .delete("/package/")
+      .set("x-authorization", "valid-token")
+      .send({metadata});
 
     expect(res.status).toEqual(404);
   });
@@ -294,7 +294,7 @@ describe("DELETE /packages/:packageID", () => {
     const storageRef = ref(storage, `${metadata.Name}/${filename}`);
     const db = getFirestore(admin.apps[0]);
     const packagesRef = db.collection(metadata.Name).doc(metadata.Version);
-    
+
     // Delete package if it exists
     try {
       await packagesRef.delete();
@@ -305,9 +305,9 @@ describe("DELETE /packages/:packageID", () => {
       .delete(`/packages/${metadata.ID}`)
       .set("x-authorization", token)
       .set("Accept", "application/json");
-  
+
     expect(response.status).toBe(404);
     expect(response.body).toBe("Package does not exist.");
   });
-});  
+});
 */
