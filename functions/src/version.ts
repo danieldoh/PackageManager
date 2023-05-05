@@ -56,10 +56,11 @@ const downloadVersion = async (req: Request, res: Response) => {
         } else {
           reqInfo = req.body;
         }
-        await Promise.all(reqInfo.map(async (obj: { Version: string; Name: string; }) => {
+        await Promise.all(req.body.forEach(async (obj: { Version: string; Name: string; }) => {
           console.log(`${obj}`);
           const version: string = obj.Version;
           const name: string = obj.Name;
+          console.log(name);
           const nameRef = db.collection(name);
           const versionArray: string[] = [];
           const versions = await nameRef.get();
