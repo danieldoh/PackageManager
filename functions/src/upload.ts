@@ -11,7 +11,7 @@ import {getBusFactor} from "./busfactor";
 import {firebaseConfig} from "./firebase";
 import {getLicense, getResponsiveness} from "./licAndResp";
 import {getPR} from "./pullRequest";
-import {getRampCorr} from "./ramAndCorr";
+// import { getRampCorr } from './ramAndCorr';
 import {validation} from "./validate";
 import {getVP} from "./versionPinning";
 const crypto = require("crypto");
@@ -256,20 +256,23 @@ const uploadFile = async (req: Request, res: Response) => {
         const busfactor: number = await getBusFactor(owner, repo);
         const license: number = await getLicense(owner, repo);
         const responsiveness: number = await getResponsiveness(owner, repo);
-        const [correctness, rampup]: number[] = await getRampCorr(owner, repo);
+        // const [correctness, rampup]: number[] = await getRampCorr(owner, repo);
         // const rampup: number = await (owner, repo);
         const versionPinning: number = await getVP(owner, repo);
         const pullrequest: number = await getPR(owner, repo);
 
         const rate: rateJson = {
           BusFactor: busfactor,
-          Correctness: correctness,
-          RampUp: rampup,
+          Correctness: 0.3,
+          RampUp: 0.3,
           ResponsiveMaintainer: responsiveness,
           LicenseScore: license,
           GoodPinningPractice: versionPinning,
           PullRequest: pullrequest,
-          NetScore: 0.5,
+          NetScore:
+            license *
+            (0.3 * (busfactor + versionPinning) +
+              0.2 * (responsiveness + pullrequest)),
         };
 
         console.log(rate);
