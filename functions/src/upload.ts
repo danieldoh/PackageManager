@@ -1,18 +1,11 @@
-import {Request, Response} from "express";
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {getDownloadURL, getStorage, ref, uploadString} from "firebase/storage";
 import {initializeApp} from "firebase/app";
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadString,
-} from "firebase/storage";
-import {getBusFactor} from "./busfactor";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {firebaseConfig} from "./firebase";
-import {getLicense, getResponsiveness} from "./licAndResp";
-import {getPR} from "./pullRequest";
-// import { getRampCorr } from './ramAndCorr';
+import {Request, Response} from "express";
 import {validation} from "./validate";
+import {getLicense, getResponsiveness} from "./licAndResp";
+import {getBusFactor} from "./busfactor";
 import {getVP} from "./versionPinning";
 const crypto = require("crypto");
 const path = require("path");
@@ -23,34 +16,34 @@ const admin = require("firebase-admin");
 
 interface historyJson {
   User: {
-    name: string;
-    isAdmin: boolean;
+    name: string,
+    isAdmin: boolean,
   };
   Date: string;
   PackageMetadata: {
-    Name: string;
-    Version: string;
-    Id: string;
+    Name: string,
+    Version: string,
+    Id: string
   };
   Action: string;
 }
 
 interface responseJson {
   metadata: {
-    Name: string;
-    Version: string;
-    ID: string;
+    Name: string,
+    Version: string,
+    ID: string,
   };
   data: {
-    Content: string;
+    Content: string
   };
 }
 
-interface metadataJson {
-  name: string;
-  version: string;
-  id: string;
-  repository: object;
+interface metadataJson{
+  name: string,
+  version: string,
+  id: string,
+  repository: object,
 }
 
 interface rateJson {
@@ -79,10 +72,7 @@ function getID(bytes: number): string {
  * @param {string} tempID
  * @return {[metadataJson, object]}
  */
-async function getMetadata(
-  decodeBuf: Buffer,
-  tempID: string
-): Promise<[metadataJson, object]> {
+async function getMetadata(decodeBuf: Buffer, tempID: string): Promise<[metadataJson, object]> {
   const errorMeta: metadataJson = {
     name: "undefined",
     version: "undefined",
@@ -134,7 +124,7 @@ async function getMetadata(
 
     // console.log(packageJson);
     let {name, version, id, repository} = packageJson;
-    if (id == undefined) {
+    if (id == undefined ) {
       id = tempID;
     }
     // Log the package information
@@ -152,10 +142,7 @@ async function getMetadata(
  * @param {string} filename
  * @return {string}
  */
-async function downloadFile(
-  originUrl: string,
-  filename: string
-): Promise<string> {
+async function downloadFile(originUrl: string, filename: string): Promise<string> {
   let url = originUrl + "/archive/main.zip";
   // console.log(url);
   let response = await fetch(url);
@@ -182,8 +169,7 @@ const uploadFile = async (req: Request, res: Response) => {
   const rawHeaders: string[] = req.rawHeaders;
   console.log(`upload: headers ${rawHeaders}`);
   const authHeaderIndex = rawHeaders.indexOf("X-Authorization");
-  const token: string | undefined =
-    authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
+  const token: string | undefined = authHeaderIndex !== -1 ? rawHeaders[authHeaderIndex + 1] : undefined;
   console.log(`upload: ${token}`);
   if (token) {
     // token = (token) as string;
@@ -194,11 +180,7 @@ const uploadFile = async (req: Request, res: Response) => {
         let content = "";
         let repoUrl: string | unknown = "undefined";
         if (Content && URL) {
-          res
-            .status(400)
-            .send(
-              "There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid."
-            );
+          res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
         } else if (Content) {
           content = Content;
         } else if (URL) {
@@ -209,11 +191,7 @@ const uploadFile = async (req: Request, res: Response) => {
           });
           // console.log("upload: downloaded file from URL");
         } else if (Content == null && URL == null) {
-          res
-            .status(400)
-            .send(
-              "There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid."
-            );
+          res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
         }
         const tempID = getID(4);
         // console.log(`Upload: ID ${tempID}`);
@@ -222,9 +200,7 @@ const uploadFile = async (req: Request, res: Response) => {
         // const packageJson = contentResult[1];
         const metadata = contentResult[0];
         if (metadata["name"] == "undefined") {
-          res
-            .status(424)
-            .send("Package is not uploaded due to the disqualified rating.");
+          res.status(424).send("Package is not uploaded due to the disqualified rating.");
         } else if (metadata["repository"] != undefined) {
           if ("url" in metadata["repository"]) {
             const tempUrl: unknown | string = metadata["repository"].url;
@@ -234,9 +210,7 @@ const uploadFile = async (req: Request, res: Response) => {
           }
         }
         if (repoUrl == "undefined") {
-          res
-            .status(424)
-            .send("Package is not uploaded due to the disqualified rating.");
+          res.status(424).send("Package is not uploaded due to the disqualified rating.");
         }
         console.log(`upload: ${repoUrl}`);
 
@@ -253,34 +227,33 @@ const uploadFile = async (req: Request, res: Response) => {
           console.log(repo);
         }
 
+
         const busfactor: number = await getBusFactor(owner, repo);
-        const license: number = await getLicense(owner, repo);
+        const license: number= await getLicense(owner, repo);
         const responsiveness: number = await getResponsiveness(owner, repo);
-        // const [correctness, rampup]: number[] = await getRampCorr(owner, repo);
+        // const correctness: number = await (owner, repo);
+        const correctness = 1;
         // const rampup: number = await (owner, repo);
+        const rampup = 1;
         const versionPinning: number = await getVP(owner, repo);
-        const pullrequest: number = await getPR(owner, repo);
+        // const pullrequest: owner = await (owner, repo);
+        const pullrequest = 1;
 
         const rate: rateJson = {
-          BusFactor: busfactor,
-          Correctness: 0.3,
-          RampUp: 0.3,
-          ResponsiveMaintainer: responsiveness,
-          LicenseScore: license,
-          GoodPinningPractice: versionPinning,
-          PullRequest: pullrequest,
-          NetScore:
-            license *
-            (0.3 * (busfactor + versionPinning) +
-              0.2 * (responsiveness + pullrequest)),
+          "BusFactor": busfactor,
+          "Correctness": correctness,
+          "RampUp": rampup,
+          "ResponsiveMaintainer": responsiveness,
+          "LicenseScore": license,
+          "GoodPinningPractice": versionPinning,
+          "PullRequest": pullrequest,
+          "NetScore": (license * (0.3 * (busfactor + versionPinning) + 0.1 * (correctness + rampup + responsiveness + pullrequest))),
         };
 
         console.log(rate);
 
         if (rate.NetScore < 0.5) {
-          res
-            .status(424)
-            .send("Package is not uploaded due to the disqualified rating.");
+          res.status(424).send("Package is not uploaded due to the disqualified rating.");
         }
 
         const firebaseApp = initializeApp(firebaseConfig);
@@ -291,9 +264,7 @@ const uploadFile = async (req: Request, res: Response) => {
         await uploadString(storageRef, content, "base64");
         console.log("upload: uploaded the content(base64)");
 
-        const packagesRef = db
-          .collection(metadata["name"])
-          .doc(metadata["version"]);
+        const packagesRef = db.collection(metadata["name"]).doc(metadata["version"]);
         const IdRef = db.collection("ID").doc(metadata["id"]);
         const IdDoc = await IdRef.get();
         const doc = await packagesRef.get();
@@ -308,9 +279,7 @@ const uploadFile = async (req: Request, res: Response) => {
             Download_URL: url,
             Repository_URL: repoUrl,
           });
-          console.log(
-            "upload: created new metadata under metadata name collection with new version"
-          );
+          console.log("upload: created new metadata under metadata name collection with new version");
           const storageFolder = db.collection("storage");
           await storageFolder.doc(metadata["name"]).set({
             Folder: metadata["name"],
@@ -356,9 +325,7 @@ const uploadFile = async (req: Request, res: Response) => {
             Repository_URL: repoUrl,
             Rate: rate,
           });
-          console.log(
-            "upload: created the metadata under metadata ID document"
-          );
+          console.log("upload: created the metadata under metadata ID document");
         } else {
           res.status(409).send("Package exists already.");
         }
@@ -375,27 +342,15 @@ const uploadFile = async (req: Request, res: Response) => {
         res.status(201).send(responseInfo);
       } catch (error) {
         console.error(error);
-        res
-          .status(400)
-          .send(
-            "There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid."
-          );
+        res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
       }
     } else {
       console.log("upload: wrong token");
-      res
-        .status(400)
-        .send(
-          "There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid."
-        );
+      res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
     }
   } else {
     console.log("upload: missing field(s)");
-    res
-      .status(400)
-      .send(
-        "There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid."
-      );
+    res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
   }
 };
 

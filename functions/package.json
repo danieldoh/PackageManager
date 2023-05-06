@@ -1,9 +1,9 @@
 {
   "name": "functions",
   "scripts": {
-    "lint": "eslint --ext .js,.ts .",
-    "fix": "./node_modules/.bin/eslint --fix src/*.ts test/*.ts",
-    "build": "tsc",
+    "lint": "eslint --ext .js,src/*.ts .",
+    "fix": "./node_modules/.bin/eslint --fix src/*.ts",
+    "build": "tsc src/*.ts",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions,firestore,storage",
     "shell": "npm run build && firebase functions:shell",
@@ -18,7 +18,7 @@
   "engines": {
     "node": "16"
   },
-  "main": "lib/src/index.js",
+  "main": "lib/index.js",
   "dependencies": {
     "@octokit/core": "^4.2.0",
     "@octokit/plugin-paginate-rest": "^6.0.0",
