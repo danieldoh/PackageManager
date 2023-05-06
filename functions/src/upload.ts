@@ -236,7 +236,7 @@ const uploadFile = async (req: Request, res: Response) => {
         // const rampup: number = await (owner, repo);
         const rampup = 1;
         const versionPinning: number = await getVP(owner, repo);
-        //const pullrequest: owner = await (owner, repo);
+        // const pullrequest: owner = await (owner, repo);
         const pullrequest = 1;
 
         const rate: rateJson = {
