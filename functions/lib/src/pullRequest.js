@@ -28,11 +28,17 @@ const rest_1 = require("@octokit/rest");
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const octokit = new rest_1.Octokit({ auth: process.env.OAUTH_TOKEN });
+/**
+ *
+ * @param {string} owener
+ * @param {string} repo
+ * @return {number}
+ */
 async function getPR(owener, repo) {
     const PRlist = await octokit.pulls.list({
         owner: owener,
         repo: repo,
-        state: 'all',
+        state: "all",
         per_page: 100,
     });
     const PRlistNum = PRlist.data.length;
@@ -51,5 +57,5 @@ async function getPR(owener, repo) {
     return reviewedPRNum / PRlistNum;
 }
 exports.getPR = getPR;
-//getPR('vesln', 'package');
+// getPR('vesln', 'package');
 //# sourceMappingURL=pullRequest.js.map
