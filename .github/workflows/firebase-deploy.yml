@@ -9,7 +9,7 @@ on:
 jobs:
   build_and_deploy:
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
