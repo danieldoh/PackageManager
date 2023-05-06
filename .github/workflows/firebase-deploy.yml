@@ -9,7 +9,7 @@ on:
 jobs:
   build_and_deploy:
     env:
-      GITHUB_TOKEN: ${{ secrets.TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -25,7 +25,5 @@ jobs:
       - name: Build Cloud Functions
         run: npm ci && npm run build
         working-directory: functions
-      - name: Create SA key
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud.json
       - name: Deploy Cloud Functions
-        run: export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud.json && npx firebase-tools deploy --only functions --json         
+        run: npx firebase-tools deploy --only functions --json         
