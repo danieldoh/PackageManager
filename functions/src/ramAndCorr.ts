@@ -1,5 +1,7 @@
 import {exec, ExecException} from "child_process";
 import * as fs from "fs-extra";
+// import {tmp} from "tmp";
+const {tmp} = require("tmp");
 const {glob} = require("glob");
 
 /**
@@ -41,41 +43,49 @@ async function gitClone(
  * @param {string} path
  * @return {void}
  */
-async function deleFolder(path: string): Promise<void> {
+async function deleteFolder(path: string): Promise<void> {
   return await fs.remove(path);
 }
 
 /**
  *
+ * @param {string} cloneDir
  * @return {number[]}
  */
-async function getCloc(): Promise<number[]> {
+async function getCloc(cloneDir: string): Promise<number[]> {
+  // const tmpDir = tmp.dirSync().name;
+
   const clocOutputs: number[] = [];
 
   const pattern = "**/*{test,Test}*";
-  const repoDir = "repoDir/";
+  // const repoDir = tmpDir;
 
-  const testFiles: string[] = await glob(pattern, {cwd: repoDir});
+  const testFiles: string[] = await glob(pattern, {cwd: cloneDir});
   const testFilesNum = testFiles.length;
+
+  const clocDir = tmp.dirSync().name;
+  const testClocDir = tmp.dirSync().name;
 
   let cmd =
     "npx cloc" +
     " repoDir/" +
     " --sum-one" +
     " --json" +
-    " --report-file=clocOutput.json";
-
-  const testCmd = " --no-match-f=\".*(t|T)est.*\"";
+    " --report-file=" +
+    clocDir;
 
   if (testFilesNum > 0) {
+    const testCmd = " --no-match-f=\".*(t|T)est.*\"";
     cmd.concat(testCmd);
     await runCmd(cmd);
+
     cmd =
       "npx cloc" +
       " repoDir/" +
       " --sum-one" +
       " --json" +
-      " --report-file=testClocOutput.json" +
+      " --report-file=" +
+      testClocDir +
       " --match-f=\".*(t|T)est.*\"";
     await runCmd(cmd);
   } else {
@@ -83,19 +93,19 @@ async function getCloc(): Promise<number[]> {
   }
 
   try {
-    const clocJson = await fs.promises.readFile("clocOutput.json", "utf8");
+    const clocJson = await fs.promises.readFile(clocDir, "utf8");
     const clocArr = JSON.parse(clocJson.toString());
     clocOutputs.push(clocArr.SUM.code, clocArr.SUM.comment);
     if (testFilesNum > 0) {
-      const testClocJson = await fs.promises.readFile(
-        "testClocOutput.json",
-        "utf8"
-      );
+      const testClocJson = await fs.promises.readFile(testClocDir, "utf8");
       const testClocArr = JSON.parse(testClocJson.toString());
       clocOutputs.push(testClocArr.SUM.code, testClocArr.SUM.comment);
     } else {
       clocOutputs.push(0, 0);
     }
+
+    await deleteFolder(clocDir);
+    await deleteFolder(testClocDir);
   } catch (error) {
     console.error(error);
   }
@@ -113,11 +123,11 @@ export async function getRampCorr(
   owner: string,
   repo: string
 ): Promise<number[]> {
-  const repoDir = "repoDir";
-  await gitClone(owner, repo, repoDir);
+  const cloneDir: string = tmp.dirSync().name;
+  await gitClone(owner, repo, cloneDir);
   console.log("clone completed");
-  const clocArr: number[] = await getCloc();
-  await deleFolder(repoDir);
+  const clocArr: number[] = await getCloc(cloneDir);
+  await deleteFolder(cloneDir);
   console.log("delete completed");
 
   const rampScore: number =
@@ -125,6 +135,7 @@ export async function getRampCorr(
       1 :
       (clocArr[0] + clocArr[3]) / clocArr[1];
   const corrScore: number = clocArr[3] / (clocArr[1] - clocArr[3]);
+
   return [rampScore, corrScore];
 }
 
