@@ -1,7 +1,7 @@
 {
   "name": "functions",
   "scripts": {
-    "lint": "eslint --ext lib/*.js,src/*.ts",
+    "lint": "eslint --ext .js,src/*.ts .",
     "fix": "./node_modules/.bin/eslint --fix src/*.ts",
     "build": "tsc",
     "build:watch": "tsc --watch",

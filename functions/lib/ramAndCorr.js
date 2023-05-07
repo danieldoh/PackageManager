@@ -26,7 +26,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRampCorr = void 0;
 const child_process_1 = require("child_process");
 const fs = __importStar(require("fs-extra"));
-const { glob } = require("glob");
+//import {tmp} from "tmp";
+const { tmp } = require('tmp');
+const { glob } = require('glob');
 /**
  *
  * @param {string} cmd
@@ -52,59 +54,66 @@ function runCmd(cmd) {
  * @return {void}
  */
 async function gitClone(owner, repo, path) {
-    return await runCmd("git clone https://github.com/" + owner + "/" + repo + ".git ./" + path);
+    return await runCmd('git clone https://github.com/' + owner + '/' + repo + '.git ./' + path);
 }
 /**
  *
  * @param {string} path
  * @return {void}
  */
-async function deleFolder(path) {
+async function deleteFolder(path) {
     return await fs.remove(path);
 }
 /**
  *
  * @return {number[]}
  */
-async function getCloc() {
+async function getCloc(cloneDir) {
+    //const tmpDir = tmp.dirSync().name;
     const clocOutputs = [];
-    const pattern = "**/*{test,Test}*";
-    const repoDir = "repoDir/";
-    const testFiles = await glob(pattern, { cwd: repoDir });
+    const pattern = '**/*{test,Test}*';
+    //const repoDir = tmpDir;
+    const testFiles = await glob(pattern, { cwd: cloneDir });
     const testFilesNum = testFiles.length;
-    let cmd = "npx cloc" +
-        " repoDir/" +
-        " --sum-one" +
-        " --json" +
-        " --report-file=clocOutput.json";
-    const testCmd = " --no-match-f=\".*(t|T)est.*\"";
+    const clocDir = tmp.dirSync().name;
+    const testClocDir = tmp.dirSync().name;
+    let cmd = 'npx cloc' +
+        ' repoDir/' +
+        ' --sum-one' +
+        ' --json' +
+        ' --report-file=' +
+        clocDir;
     if (testFilesNum > 0) {
+        const testCmd = ' --no-match-f=".*(t|T)est.*"';
         cmd.concat(testCmd);
         await runCmd(cmd);
         cmd =
-            "npx cloc" +
-                " repoDir/" +
-                " --sum-one" +
-                " --json" +
-                " --report-file=testClocOutput.json" +
-                " --match-f=\".*(t|T)est.*\"";
+            'npx cloc' +
+                ' repoDir/' +
+                ' --sum-one' +
+                ' --json' +
+                ' --report-file=' +
+                testClocDir +
+                ' --match-f=".*(t|T)est.*"';
         await runCmd(cmd);
     }
     else {
         await runCmd(cmd);
     }
     try {
-        const clocJson = await fs.promises.readFile("clocOutput.json", "utf8");
+        const clocJson = await fs.promises.readFile(clocDir, 'utf8');
         const clocArr = JSON.parse(clocJson.toString());
         clocOutputs.push(clocArr.SUM.code, clocArr.SUM.comment);
         if (testFilesNum > 0) {
-            const testClocJson = await fs.promises.readFile("testClocOutput.json", "utf8");
+            const testClocJson = await fs.promises.readFile(testClocDir, 'utf8');
             const testClocArr = JSON.parse(testClocJson.toString());
             clocOutputs.push(testClocArr.SUM.code, testClocArr.SUM.comment);
         }
         else {
             clocOutputs.push(0, 0);
         }
+        await deleteFolder(clocDir);
+        await deleteFolder(testClocDir);
     }
     catch (error) {
         console.error(error);
@@ -118,15 +127,15 @@ async function getCloc() {
  * @return {number[]}
  */
 async function getRampCorr(owner, repo) {
-    const repoDir = "repoDir";
-    await gitClone(owner, repo, repoDir);
-    console.log("clone completed");
-    const clocArr = await getCloc();
-    await deleFolder(repoDir);
-    console.log("delete completed");
-    const rampScore = (clocArr[0] + clocArr[3]) / clocArr[1] > 1 ?
-        1 :
-        (clocArr[0] + clocArr[3]) / clocArr[1];
+    const cloneDir = tmp.dirSync().name;
+    await gitClone(owner, repo, cloneDir);
+    console.log('clone completed');
+    const clocArr = await getCloc(cloneDir);
+    await deleteFolder(cloneDir);
+    console.log('delete completed');
+    const rampScore = (clocArr[0] + clocArr[3]) / clocArr[1] > 1
+        ? 1
+        : (clocArr[0] + clocArr[3]) / clocArr[1];
     const corrScore = clocArr[3] / (clocArr[1] - clocArr[3]);
     return [rampScore, corrScore];
 }
