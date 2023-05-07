@@ -67,8 +67,8 @@ async function getCloc(cloneDir: string): Promise<number[]> {
   const testClocDir = tmp.dirSync().name;
 
   let cmd =
-    "npx cloc" +
-    " repoDir/" +
+    "npx cloc " +
+    cloneDir +
     " --sum-one" +
     " --json" +
     " --report-file=" +
@@ -80,8 +80,8 @@ async function getCloc(cloneDir: string): Promise<number[]> {
     await runCmd(cmd);
 
     cmd =
-      "npx cloc" +
-      " repoDir/" +
+      "npx cloc " +
+      cloneDir +
       " --sum-one" +
       " --json" +
       " --report-file=" +
