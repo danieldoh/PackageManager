@@ -132,6 +132,7 @@ const updateFile = async (req, res) => {
                         let repoUrl = "undefined";
                         if (data.Content && data.URL) {
                             res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+                            return;
                         }
                         else if (data.Content) {
                             content = data.Content;
@@ -146,6 +147,7 @@ const updateFile = async (req, res) => {
                         }
                         else if (data.Content == null && data.URL == null) {
                             res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+                            return;
                         }
                         const tempID = getID(4);
                         // console.log(`Upload: ID ${tempID}`);

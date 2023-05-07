@@ -130,6 +130,7 @@ const uploadFile = async (req, res) => {
                 let repoUrl = "undefined";
                 if (Content && URL) {
                     res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+                    return;
                 }
                 else if (Content) {
                     content = Content;
@@ -144,6 +145,7 @@ const uploadFile = async (req, res) => {
                 }
                 else if (Content == null && URL == null) {
                     res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+                    return;
                 }
                 const tempID = getID(4);
                 // console.log(`Upload: ID ${tempID}`);
@@ -164,6 +166,7 @@ const uploadFile = async (req, res) => {
                 }
                 if (repoUrl == "undefined") {
                     res.status(424).send("Package is not uploaded due to the disqualified rating.");
+                    return;
                 }
                 console.log(`upload: ${repoUrl}`);
                 let owner = "undefined";
@@ -199,6 +202,7 @@ const uploadFile = async (req, res) => {
                 console.log(rate);
                 if (rate.NetScore < 0.5) {
                     res.status(424).send("Package is not uploaded due to the disqualified rating.");
+                    return;
                 }
                 const firebaseApp = (0, app_1.initializeApp)(firebase_1.firebaseConfig);
                 const storage = (0, storage_1.getStorage)(firebaseApp);
@@ -273,6 +277,7 @@ const uploadFile = async (req, res) => {
                 }
                 else {
                     res.status(409).send("Package exists already.");
+                    return;
                 }
                 const responseInfo = {
                     metadata: {
