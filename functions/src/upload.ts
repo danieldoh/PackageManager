@@ -181,6 +181,7 @@ const uploadFile = async (req: Request, res: Response) => {
         let repoUrl: string | unknown = "undefined";
         if (Content && URL) {
           res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+          return;
         } else if (Content) {
           content = Content;
         } else if (URL) {
@@ -192,6 +193,7 @@ const uploadFile = async (req: Request, res: Response) => {
           // console.log("upload: downloaded file from URL");
         } else if (Content == null && URL == null) {
           res.status(400).send("There is missing field(s) in the PackageData/AuthenticationToken or it is formed improperly (e.g. Content and URL are both set), , or the AuthenticationToken is invalid.");
+          return;
         }
         const tempID = getID(4);
         // console.log(`Upload: ID ${tempID}`);
@@ -211,6 +213,7 @@ const uploadFile = async (req: Request, res: Response) => {
         }
         if (repoUrl == "undefined") {
           res.status(424).send("Package is not uploaded due to the disqualified rating.");
+          return;
         }
         console.log(`upload: ${repoUrl}`);
 
@@ -254,6 +257,7 @@ const uploadFile = async (req: Request, res: Response) => {
 
         if (rate.NetScore < 0.5) {
           res.status(424).send("Package is not uploaded due to the disqualified rating.");
+          return;
         }
 
         const firebaseApp = initializeApp(firebaseConfig);
@@ -328,6 +332,7 @@ const uploadFile = async (req: Request, res: Response) => {
           console.log("upload: created the metadata under metadata ID document");
         } else {
           res.status(409).send("Package exists already.");
+          return;
         }
         const responseInfo: responseJson = {
           metadata: {
