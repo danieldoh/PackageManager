@@ -10,7 +10,8 @@ import {
 import {getBusFactor} from "./busfactor";
 import {firebaseConfig} from "./firebase";
 import {getLicense, getResponsiveness} from "./licAndResp";
-import {getRampCorr} from "./ramAndCorr";
+import {getPR} from "./pullRequest";
+// import { getRampCorr } from './ramAndCorr';
 import {validation} from "./validate";
 import {getVP} from "./versionPinning";
 const crypto = require("crypto");
@@ -259,12 +260,13 @@ const uploadFile = async (req: Request, res: Response) => {
         const license: number = await getLicense(owner, repo);
         const responsiveness: number = await getResponsiveness(owner, repo);
         // const correctness: number = await (owner, repo);
-        const [rampup, correctness] = await getRampCorr(owner, repo);
+        const correctness = 1;
+        // const [rampup, correctness]: number[] = await getRampCorr(owner, repo);
         // const rampup: number = await (owner, repo);
-        // const rampup = 1;
+        const rampup = 1;
         const versionPinning: number = await getVP(owner, repo);
         // const pullrequest: owner = await (owner, repo);
-        const pullrequest = 1;
+        const pullrequest: number = await getPR(owner, repo);
 
         const rate: rateJson = {
           BusFactor: busfactor,
