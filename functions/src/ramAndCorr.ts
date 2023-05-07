@@ -64,7 +64,9 @@ async function getCloc(cloneDir: string): Promise<number[]> {
   const testFilesNum = testFiles.length;
 
   const clocDir = tmp.dirSync().name;
+  const clocPath = "${clocDir}/data.json";
   const testClocDir = tmp.dirSync().name;
+  const testClocPath = "${testClocDir}/data.json";
 
   let cmd =
     "npx cloc " +
@@ -72,7 +74,7 @@ async function getCloc(cloneDir: string): Promise<number[]> {
     " --sum-one" +
     " --json" +
     " --report-file=" +
-    clocDir;
+    clocPath;
 
   if (testFilesNum > 0) {
     const testCmd = " --no-match-f=\".*(t|T)est.*\"";
@@ -85,7 +87,7 @@ async function getCloc(cloneDir: string): Promise<number[]> {
       " --sum-one" +
       " --json" +
       " --report-file=" +
-      testClocDir +
+      testClocPath +
       " --match-f=\".*(t|T)est.*\"";
     await runCmd(cmd);
   } else {
@@ -93,11 +95,11 @@ async function getCloc(cloneDir: string): Promise<number[]> {
   }
 
   try {
-    const clocJson = await fs.promises.readFile(clocDir, "utf8");
+    const clocJson = await fs.promises.readFile(clocPath, "utf8");
     const clocArr = JSON.parse(clocJson.toString());
     clocOutputs.push(clocArr.SUM.code, clocArr.SUM.comment);
     if (testFilesNum > 0) {
-      const testClocJson = await fs.promises.readFile(testClocDir, "utf8");
+      const testClocJson = await fs.promises.readFile(testClocPath, "utf8");
       const testClocArr = JSON.parse(testClocJson.toString());
       clocOutputs.push(testClocArr.SUM.code, testClocArr.SUM.comment);
     } else {
